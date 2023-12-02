@@ -1,7 +1,7 @@
 use std::time::Duration;
 
-use metrics_dashboard::build_dashboard_route;
 use metrics::{describe_counter, increment_counter};
+use metrics_dashboard::build_dashboard_route;
 use poem::{
     get, handler, listener::TcpListener, middleware::Tracing, web::Path, EndpointExt, Route, Server,
 };
