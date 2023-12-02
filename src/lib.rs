@@ -16,6 +16,7 @@
 //! describe_counter!("demo_metric1", "Demo metric1");
 //! increment_counter!("demo_metric1");
 //! ```
+pub use middleware::HttpMetricMiddleware;
 use poem::EndpointExt;
 use poem::{
     handler,
@@ -34,6 +35,7 @@ use rust_embed::RustEmbed;
 use recoder::{DashboardRecorder, MetricMeta, MetricValue};
 use serde::Deserialize;
 
+mod middleware;
 mod recoder;
 
 #[cfg(feature = "embed")]
@@ -79,5 +81,6 @@ pub fn build_dashboard_route() -> Route {
     let route = route.at("/", EmbeddedFileEndpoint::<Files>::new("index.html"));
     #[cfg(feature = "embed")]
     let route = route.nest("/", EmbeddedFilesEndpoint::<Files>::new());
+
     route
 }

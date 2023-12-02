@@ -507,6 +507,7 @@ dependencies = [
 name = "metrics-dashboard"
 version = "0.1.0"
 dependencies = [
+ "async-trait",
  "metrics",
  "metrics-util",
  "poem",

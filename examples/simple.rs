@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use metrics::{describe_counter, increment_counter};
-use metrics_dashboard::build_dashboard_route;
+use metrics_dashboard::{build_dashboard_route, HttpMetricMiddleware};
 use poem::{
     get, handler, listener::TcpListener, middleware::Tracing, web::Path, EndpointExt, Route, Server,
 };
@@ -21,6 +21,7 @@ async fn main() -> Result<(), std::io::Error> {
     let app = Route::new()
         .at("/hello/:name", get(hello))
         .nest("/dashboard/", build_dashboard_route())
+        .with(HttpMetricMiddleware)
         .with(Tracing);
 
     tokio::spawn(async move {
