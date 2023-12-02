@@ -47,7 +47,7 @@ fn api_metrics_value(
     Data(recorder): Data<&DashboardRecorder>,
     Query(query): Query<MetricQuery>,
 ) -> Json<Vec<MetricValue>> {
-    let keys = query.keys.split(";").into_iter().collect::<Vec<&str>>();
+    let keys = query.keys.split(';').collect::<Vec<&str>>();
     Json(recorder.metrics_value(keys))
 }
 

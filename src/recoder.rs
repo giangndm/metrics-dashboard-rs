@@ -45,7 +45,7 @@ impl DashboardRecorder {
     pub fn metrics(&self) -> Vec<MetricMeta> {
         let mut res = vec![];
         let metrics = &*self.metrics.read().expect("Should lock");
-        for (_key, meta) in metrics {
+        for (_key, meta) in metrics.iter() {
             res.push(meta.clone());
         }
         res
