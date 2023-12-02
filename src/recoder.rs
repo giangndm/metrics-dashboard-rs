@@ -56,14 +56,17 @@ impl DashboardRecorder {
         let mut data = vec![];
         for key in keys {
             if let Some(meta) = metrics.get(key) {
-                let value = match meta.typ {
+                match meta.typ {
                     MetricType::Counter => {
                         let counter = self
                             .registry
                             .get_or_create_counter(&metrics::Key::from(key.to_string()), |a| {
                                 a.clone()
                             });
-                        counter.get_inner().load(Ordering::Relaxed)
+                        data.push(MetricValue {
+                            key: key.to_string(),
+                            value: counter.get_inner().load(Ordering::Relaxed),
+                        });
                     }
                     MetricType::Gauge => {
                         let gauge = self
@@ -71,17 +74,20 @@ impl DashboardRecorder {
                             .get_or_create_gauge(&metrics::Key::from(key.to_string()), |a| {
                                 a.clone()
                             });
-                        gauge.get_inner().load(Ordering::Relaxed)
+                        data.push(MetricValue {
+                            key: key.to_string(),
+                            value: gauge.get_inner().load(Ordering::Relaxed),
+                        });
                     }
                     MetricType::Histogram => {
-                        panic!("Dont support yet")
+                        // let _histogram = self
+                        //     .registry
+                        //     .get_or_create_histogram(&metrics::Key::from(key.to_string()), |a| {
+                        //         a.clone()
+                        //     });
+                        // TODO
                     }
                 };
-
-                data.push(MetricValue {
-                    key: key.to_string(),
-                    value,
-                });
             }
         }
         data

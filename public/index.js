@@ -11,9 +11,9 @@ function Chart ({ metric, desc }) {
         }
         const data = CachedChannel[metric] ? [CachedChannel[metric]] : [];
         const opts = Object.assign({}, window.ApexOptionsColumn);
-        opts.title.text = desc;
+        opts.title.text = desc || metric;
         opts.subtitle.text = data[0] ? data[0][1] : '--';
-        opts.series[0].name = desc;
+        opts.series[0].name = desc || metric;
         opts.series[0].data = data;
         
         const chart = new ApexCharts(elm.current, opts);

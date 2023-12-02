@@ -16,6 +16,9 @@
 //! describe_counter!("demo_metric1", "Demo metric1");
 //! increment_counter!("demo_metric1");
 //! ```
+use metrics_prometheus::failure::strategy::{self, NoOp};
+use metrics_util::layers::FanoutBuilder;
+pub use middleware::HttpMetricMiddleware;
 use poem::EndpointExt;
 use poem::{
     handler,
@@ -34,6 +37,7 @@ use rust_embed::RustEmbed;
 use recoder::{DashboardRecorder, MetricMeta, MetricValue};
 use serde::Deserialize;
 
+mod middleware;
 mod recoder;
 
 #[cfg(feature = "embed")]
@@ -44,6 +48,13 @@ pub struct Files;
 #[derive(Debug, Deserialize)]
 struct MetricQuery {
     keys: String,
+}
+
+#[handler]
+fn prometheus_metrics(Data(recorder): Data<&metrics_prometheus::Recorder<NoOp>>) -> String {
+    prometheus::TextEncoder::new()
+        .encode_to_string(&recorder.registry().gather())
+        .expect("Should generate")
 }
 
 #[handler]
@@ -61,13 +72,24 @@ fn api_metrics_value(
 }
 
 pub fn build_dashboard_route() -> Route {
-    let recorder = DashboardRecorder::new();
-    metrics::set_boxed_recorder(Box::new(recorder.clone()))
+    let recorder1 = metrics_prometheus::Recorder::builder()
+        .with_failure_strategy(strategy::NoOp)
+        .build();
+
+    let recorder2 = DashboardRecorder::new();
+
+    let recoder_fanout = FanoutBuilder::default()
+        .add_recorder(recorder1.clone())
+        .add_recorder(recorder2.clone())
+        .build();
+
+    metrics::set_boxed_recorder(Box::new(recoder_fanout))
         .expect("Should register a recorder successfull");
 
     let route = Route::new()
-        .at("/api/metrics", api_metrics.data(recorder.clone()))
-        .at("/api/metrics_value", api_metrics_value.data(recorder));
+        .at("/prometheus", prometheus_metrics.data(recorder1))
+        .at("/api/metrics", api_metrics.data(recorder2.clone()))
+        .at("/api/metrics_value", api_metrics_value.data(recorder2));
 
     #[cfg(not(feature = "embed"))]
     let route = route.nest(
@@ -79,5 +101,6 @@ pub fn build_dashboard_route() -> Route {
     let route = route.at("/", EmbeddedFileEndpoint::<Files>::new("index.html"));
     #[cfg(feature = "embed")]
     let route = route.nest("/", EmbeddedFilesEndpoint::<Files>::new());
+
     route
 }
