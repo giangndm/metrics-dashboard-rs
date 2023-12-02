@@ -2,7 +2,7 @@
 
 [![Crates.io](https://img.shields.io/crates/v/metrics-dashboard.svg)](https://crates.io/crates/metrics-dashboard)
 [![Docs.rs](https://docs.rs/metrics-dashboard/badge.svg)](https://docs.rs/metrics-dashboard)
-[![CI](https://github.com/giangndm/metrics-dashboard/workflows/CI/badge.svg)](https://github.com/giangndm/metrics-dashboard/actions)
+[![CI](https://github.com/giangndm/metrics-dashboard/workflows/CI/badge.svg)](https://github.com/giangndm/metrics-dashboard-rs/actions)
 
 This crate provide simple auto-generate dashboard for [metric-rs](https://crates.io/crates/metrics) crate.
 
