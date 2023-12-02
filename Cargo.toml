@@ -2,7 +2,7 @@
 name = "metrics-dashboard"
 version = "0.1.0"
 edition = "2021"
-description = "Zero-config generate simple metrics dashboard with Rust"
+description = "Zero-config dashboard with metrics-rs"
 repository = "https://github.com/giangndm/metrics-dashboard-rs"
 license = "MIT"
 
