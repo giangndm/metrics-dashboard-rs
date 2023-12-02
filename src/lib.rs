@@ -1,12 +1,21 @@
-/// This crate provide simple auto-generate dashboard for [metric-rs](https://crates.io/crates/metrics) crate.
-/// To intergrate to poem webserver, simple include to route like:
-///
-/// ```rust
-/// use metrics_dashboard::build_dashboard_route;
-/// use poem::Route;
-///
-/// let app = Route::new().nest("/dashboard/", build_dashboard_route());
-/// ```
+//! This crate provide simple auto-generate dashboard for [metric-rs](https://crates.io/crates/metrics) crate.
+//! To intergrate to poem webserver, simple include to route like:
+//!
+//! ```rust
+//! use metrics_dashboard::build_dashboard_route;
+//! use poem::Route;
+//!
+//! let app = Route::new().nest("/dashboard/", build_dashboard_route());
+//! ```
+//!
+//! After init dashboard route, all of metrics defined metric will be exposed.
+//!
+//! ```rust
+//! use metrics::{describe_counter, increment_counter};
+//!
+//! describe_counter!("demo_metric1", "Demo metric1");
+//! increment_counter!("demo_metric1");
+//! ```
 use poem::EndpointExt;
 use poem::{
     handler,
