@@ -87,6 +87,7 @@ impl DashboardRecorder {
         for (_key, meta) in metrics.iter() {
             res.push(meta.clone());
         }
+        res.sort_by_cached_key(|m: &MetricMeta| m.key.clone());
         res
     }
 
