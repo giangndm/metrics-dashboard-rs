@@ -34,11 +34,11 @@ use poem::endpoint::{EmbeddedFileEndpoint, EmbeddedFilesEndpoint};
 #[cfg(feature = "embed")]
 use rust_embed::RustEmbed;
 
-use recoder::{DashboardRecorder, MetricMeta, MetricValue};
+use recorder::{DashboardRecorder, MetricMeta, MetricValue};
 use serde::Deserialize;
 
 mod middleware;
-mod recoder;
+mod recorder;
 
 #[cfg(feature = "embed")]
 #[derive(RustEmbed)]

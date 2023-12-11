@@ -1,12 +1,15 @@
 use metrics::{Key, Recorder};
-use metrics_util::registry::{
-    AtomicStorage, GenerationalAtomicStorage, GenerationalStorage, Registry,
-};
 use serde::Serialize;
 use std::{
     collections::HashMap,
-    sync::{atomic::Ordering, Arc, RwLock},
+    sync::{Arc, RwLock},
 };
+
+use self::{counter::SimpleCounter, gauge::SimpleGauge, histogram::SimpleHistogram};
+
+mod counter;
+mod gauge;
+mod histogram;
 
 #[derive(Debug, Serialize, Clone)]
 pub enum MetricType {
@@ -25,19 +28,46 @@ pub struct MetricMeta {
 #[derive(Debug, Serialize, Clone)]
 pub struct MetricValue {
     key: String,
-    value: u64,
+    #[serde(rename = "value", skip_serializing_if = "Option::is_none")]
+    value_u64: Option<u64>,
+    #[serde(rename = "value", skip_serializing_if = "Option::is_none")]
+    value_f64: Option<f64>,
+}
+
+#[derive(Default)]
+struct DashboardStorage {
+    counters: HashMap<String, SimpleCounter>,
+    gauges: HashMap<String, SimpleGauge>,
+    histograms: HashMap<String, SimpleHistogram>,
+}
+
+impl DashboardStorage {
+    fn get_counter(&mut self, key: &str) -> SimpleCounter {
+        let entry = self.counters.entry(key.to_string()).or_default();
+        entry.clone()
+    }
+
+    fn get_gause(&mut self, key: &str) -> SimpleGauge {
+        let entry = self.gauges.entry(key.to_string()).or_default();
+        entry.clone()
+    }
+
+    fn get_histogram(&mut self, key: &str) -> SimpleHistogram {
+        let entry = self.histograms.entry(key.to_string()).or_default();
+        entry.clone()
+    }
 }
 
 #[derive(Clone)]
 pub struct DashboardRecorder {
-    registry: Arc<Registry<Key, GenerationalAtomicStorage>>,
+    storage: Arc<RwLock<DashboardStorage>>,
     metrics: Arc<RwLock<HashMap<String, MetricMeta>>>,
 }
 
 impl DashboardRecorder {
     pub fn new() -> Self {
         Self {
-            registry: Arc::new(Registry::new(GenerationalStorage::new(AtomicStorage))),
+            storage: Default::default(),
             metrics: Arc::new(RwLock::new(HashMap::new())),
         }
     }
@@ -48,35 +78,31 @@ impl DashboardRecorder {
         for (_key, meta) in metrics.iter() {
             res.push(meta.clone());
         }
+        res.sort_by_cached_key(|m: &MetricMeta| m.key.clone());
         res
     }
 
     pub fn metrics_value(&self, keys: Vec<&str>) -> Vec<MetricValue> {
+        let mut storage = self.storage.write().expect("Should lock");
         let metrics = self.metrics.read().expect("Should lock");
         let mut data = vec![];
         for key in keys {
             if let Some(meta) = metrics.get(key) {
                 match meta.typ {
                     MetricType::Counter => {
-                        let counter = self
-                            .registry
-                            .get_or_create_counter(&metrics::Key::from(key.to_string()), |a| {
-                                a.clone()
-                            });
+                        let counter = storage.get_counter(key);
                         data.push(MetricValue {
                             key: key.to_string(),
-                            value: counter.get_inner().load(Ordering::Relaxed),
+                            value_u64: Some(counter.value()),
+                            value_f64: None,
                         });
                     }
                     MetricType::Gauge => {
-                        let gauge = self
-                            .registry
-                            .get_or_create_gauge(&metrics::Key::from(key.to_string()), |a| {
-                                a.clone()
-                            });
+                        let gauge = storage.get_gause(key);
                         data.push(MetricValue {
                             key: key.to_string(),
-                            value: gauge.get_inner().load(Ordering::Relaxed),
+                            value_u64: None,
+                            value_f64: Some((gauge.value() * 100.0).round() / 100.0),
                         });
                     }
                     MetricType::Histogram => {
@@ -171,8 +197,13 @@ impl Recorder for DashboardRecorder {
             );
         }
 
-        self.registry
-            .get_or_create_counter(key, |c| c.clone().into())
+        metrics::Counter::from_arc(
+            self.storage
+                .write()
+                .expect("Should lock")
+                .get_counter(key.name())
+                .into(),
+        )
     }
 
     fn register_gauge(&self, key: &Key) -> metrics::Gauge {
@@ -188,7 +219,13 @@ impl Recorder for DashboardRecorder {
             );
         }
 
-        self.registry.get_or_create_gauge(key, |c| c.clone().into())
+        metrics::Gauge::from_arc(
+            self.storage
+                .write()
+                .expect("Should lock")
+                .get_gause(key.name())
+                .into(),
+        )
     }
 
     fn register_histogram(&self, key: &Key) -> metrics::Histogram {
@@ -204,7 +241,12 @@ impl Recorder for DashboardRecorder {
             );
         }
 
-        self.registry
-            .get_or_create_histogram(key, |c| c.clone().into())
+        metrics::Histogram::from_arc(
+            self.storage
+                .write()
+                .expect("Should lock")
+                .get_histogram(key.name())
+                .into(),
+        )
     }
 }
