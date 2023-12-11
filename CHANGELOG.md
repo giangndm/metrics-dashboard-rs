@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.2](https://github.com/giangndm/metrics-dashboard-rs/compare/v0.1.1...v0.1.2) - 2023-12-11
+
+### Other
+- Fix/gause f64 wrong ([#5](https://github.com/giangndm/metrics-dashboard-rs/pull/5))
+
 ## [0.1.1](https://github.com/giangndm/metrics-dashboard-rs/compare/v0.1.0...v0.1.1) - 2023-12-02
 
 ### Added
