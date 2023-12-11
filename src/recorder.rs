@@ -43,26 +43,17 @@ struct DashboardStorage {
 
 impl DashboardStorage {
     fn get_counter(&mut self, key: &str) -> SimpleCounter {
-        let entry = self
-            .counters
-            .entry(key.to_string())
-            .or_default();
+        let entry = self.counters.entry(key.to_string()).or_default();
         entry.clone()
     }
 
     fn get_gause(&mut self, key: &str) -> SimpleGauge {
-        let entry = self
-            .gauges
-            .entry(key.to_string())
-            .or_default();
+        let entry = self.gauges.entry(key.to_string()).or_default();
         entry.clone()
     }
 
     fn get_histogram(&mut self, key: &str) -> SimpleHistogram {
-        let entry = self
-            .histograms
-            .entry(key.to_string())
-            .or_default();
+        let entry = self.histograms.entry(key.to_string()).or_default();
         entry.clone()
     }
 }
