@@ -1,6 +1,6 @@
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
-use metrics::{describe_counter, increment_counter};
+use metrics::{describe_counter, describe_gauge, gauge, increment_counter};
 use metrics_dashboard::{build_dashboard_route, HttpMetricMiddleware};
 use poem::{
     get, handler, listener::TcpListener, middleware::Tracing, web::Path, EndpointExt, Route, Server,
@@ -25,10 +25,11 @@ async fn main() -> Result<(), std::io::Error> {
         .with(Tracing);
 
     tokio::spawn(async move {
-        describe_counter!("demo_metric1", "Demo metric1");
+        describe_gauge!("demo_live_time", "Demo live time seconds");
+        let start = Instant::now();
         loop {
             tokio::time::sleep(Duration::from_secs(1)).await;
-            increment_counter!("demo_metric1");
+            gauge!("demo_live_time", start.elapsed().as_secs_f64());
         }
     });
 
