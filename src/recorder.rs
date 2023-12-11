@@ -46,7 +46,7 @@ impl DashboardStorage {
         let entry = self
             .counters
             .entry(key.to_string())
-            .or_insert_with(|| Default::default());
+            .or_insert_with(Default::default);
         entry.clone()
     }
 
@@ -54,7 +54,7 @@ impl DashboardStorage {
         let entry = self
             .gauges
             .entry(key.to_string())
-            .or_insert_with(|| Default::default());
+            .or_insert_with(Default::default);
         entry.clone()
     }
 
@@ -62,7 +62,7 @@ impl DashboardStorage {
         let entry = self
             .histograms
             .entry(key.to_string())
-            .or_insert_with(|| Default::default());
+            .or_insert_with(Default::default);
         entry.clone()
     }
 }

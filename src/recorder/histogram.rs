@@ -4,7 +4,7 @@ use metrics::HistogramFn;
 pub struct SimpleHistogram {}
 
 impl HistogramFn for SimpleHistogram {
-    fn record(&self, value: f64) {
+    fn record(&self, _value: f64) {
         //TODO
     }
 }
