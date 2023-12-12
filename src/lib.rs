@@ -16,6 +16,8 @@
 //! describe_counter!("demo_metric1", "Demo metric1");
 //! increment_counter!("demo_metric1");
 //! ```
+#[cfg(feature = "system")]
+use metrics_process::register_sysinfo_event;
 use metrics_prometheus::failure::strategy::{self, NoOp};
 use metrics_util::layers::FanoutBuilder;
 pub use middleware::HttpMetricMiddleware;
@@ -37,6 +39,8 @@ use rust_embed::RustEmbed;
 use recorder::{DashboardRecorder, MetricMeta, MetricValue};
 use serde::Deserialize;
 
+#[cfg(feature = "system")]
+mod metrics_process;
 mod middleware;
 mod recorder;
 
@@ -85,6 +89,8 @@ pub fn build_dashboard_route() -> Route {
 
     metrics::set_boxed_recorder(Box::new(recoder_fanout))
         .expect("Should register a recorder successfull");
+    #[cfg(feature = "system")]
+    register_sysinfo_event();
 
     let route = Route::new()
         .at("/prometheus", prometheus_metrics.data(recorder1))
@@ -103,4 +109,9 @@ pub fn build_dashboard_route() -> Route {
     let route = route.nest("/", EmbeddedFilesEndpoint::<Files>::new());
 
     route
+}
+
+#[allow(unused)]
+pub(crate) fn round_up_f64_2digits(input: f64) -> f64 {
+    (input * 100.0).round() / 100.0
 }
