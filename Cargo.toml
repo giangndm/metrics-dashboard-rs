@@ -9,7 +9,7 @@ license = "MIT"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-async-trait = "0.1.74"
+async-trait = "0.1.75"
 metrics = "0.21.1"
 metrics-util = "0.15.1"
 metrics-prometheus = "0.5.0"
