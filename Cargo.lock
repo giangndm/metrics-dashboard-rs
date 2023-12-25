@@ -539,13 +539,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "metrics"
+version = "0.22.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "77b9e10a211c839210fd7f99954bda26e5f8e26ec686ad68da6a32df7c80e782"
+dependencies = [
+ "ahash",
+ "portable-atomic",
+]
+
+[[package]]
 name = "metrics-dashboard"
 version = "0.1.3"
 dependencies = [
  "async-trait",
- "metrics",
+ "metrics 0.21.1",
  "metrics-prometheus",
- "metrics-util",
+ "metrics-util 0.16.0",
  "poem",
  "prometheus",
  "rust-embed",
@@ -573,8 +583,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "761cc41043c12faff8e58853f5381385c66d7f206ca2184190d0cc700d058a89"
 dependencies = [
  "arc-swap",
- "metrics",
- "metrics-util",
+ "metrics 0.21.1",
+ "metrics-util 0.15.1",
  "once_cell",
  "prometheus",
  "sealed",
@@ -588,12 +598,25 @@ version = "0.15.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4de2ed6e491ed114b40b732e4d1659a9d53992ebd87490c44a6ffe23739d973e"
 dependencies = [
+ "crossbeam-epoch",
+ "crossbeam-utils",
+ "hashbrown 0.13.1",
+ "metrics 0.21.1",
+ "num_cpus",
+]
+
+[[package]]
+name = "metrics-util"
+version = "0.16.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2670b8badcc285d486261e2e9f1615b506baff91427b61bd336a472b65bbf5ed"
+dependencies = [
  "aho-corasick",
  "crossbeam-epoch",
  "crossbeam-utils",
  "hashbrown 0.13.1",
  "indexmap 1.9.3",
- "metrics",
+ "metrics 0.22.0",
  "num_cpus",
  "ordered-float",
  "quanta",
@@ -712,9 +735,9 @@ checksum = "dd8b5dd2ae5ed71462c540258bedcb51965123ad7e7ccf4b9a8cafaa4a63576d"
 
 [[package]]
 name = "ordered-float"
-version = "3.9.2"
+version = "4.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f1e1c390732d15f1d48471625cd92d154e66db2c56645e29a9cd26f4699f72dc"
+checksum = "a76df7075c7d4d01fdcb46c912dd17fba5b60c78ea480b475f2b6ab6f666584e"
 dependencies = [
  "num-traits",
 ]
@@ -860,9 +883,9 @@ checksum = "106dd99e98437432fed6519dedecfade6a06a73bb7b2a1e019fdd2bee5778d94"
 
 [[package]]
 name = "quanta"
-version = "0.11.1"
+version = "0.12.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a17e662a7a8291a865152364c20c7abc5e60486ab2001e8ec10b24862de0b9ab"
+checksum = "577c55a090a94ed7da0e6580cc38a553558e2d736398b5d8ebf81bc9880f8acd"
 dependencies = [
  "crossbeam-utils",
  "libc",
@@ -895,11 +918,11 @@ dependencies = [
 
 [[package]]
 name = "raw-cpuid"
-version = "10.7.0"
+version = "11.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6c297679cb867470fa8c9f67dbba74a78d78e3e98d7cf2b08d6d71540f797332"
+checksum = "9d86a7c4638d42c44551f4791a20e687dbb4c3de1f33c43dd71e355cd429def1"
 dependencies = [
- "bitflags 1.3.2",
+ "bitflags 2.4.1",
 ]
 
 [[package]]
