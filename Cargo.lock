@@ -539,13 +539,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "metrics"
+version = "0.22.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "77b9e10a211c839210fd7f99954bda26e5f8e26ec686ad68da6a32df7c80e782"
+dependencies = [
+ "ahash",
+ "portable-atomic",
+]
+
+[[package]]
 name = "metrics-dashboard"
 version = "0.1.3"
 dependencies = [
  "async-trait",
- "metrics",
+ "metrics 0.21.1",
  "metrics-prometheus",
- "metrics-util",
+ "metrics-util 0.15.1",
  "poem",
  "prometheus",
  "rust-embed",
@@ -568,13 +578,13 @@ dependencies = [
 
 [[package]]
 name = "metrics-prometheus"
-version = "0.5.0"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "761cc41043c12faff8e58853f5381385c66d7f206ca2184190d0cc700d058a89"
+checksum = "b3e1316f9ef05b91f4d0e0a0da5b620ba919d336280b83b36be096b86c030fdd"
 dependencies = [
  "arc-swap",
- "metrics",
- "metrics-util",
+ "metrics 0.22.0",
+ "metrics-util 0.16.0",
  "once_cell",
  "prometheus",
  "sealed",
@@ -593,12 +603,25 @@ dependencies = [
  "crossbeam-utils",
  "hashbrown 0.13.1",
  "indexmap 1.9.3",
- "metrics",
+ "metrics 0.21.1",
  "num_cpus",
  "ordered-float",
  "quanta",
  "radix_trie",
  "sketches-ddsketch",
+]
+
+[[package]]
+name = "metrics-util"
+version = "0.16.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2670b8badcc285d486261e2e9f1615b506baff91427b61bd336a472b65bbf5ed"
+dependencies = [
+ "crossbeam-epoch",
+ "crossbeam-utils",
+ "hashbrown 0.13.1",
+ "metrics 0.22.0",
+ "num_cpus",
 ]
 
 [[package]]
