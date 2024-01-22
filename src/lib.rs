@@ -75,12 +75,16 @@ fn api_metrics_value(
     Json(recorder.metrics_value(keys))
 }
 
-pub fn build_dashboard_route() -> Route {
+pub fn build_dashboard_route(bound_keys: Vec<(&str, &str)>) -> Route {
     let recorder1 = metrics_prometheus::Recorder::builder()
         .with_failure_strategy(strategy::NoOp)
         .build();
 
-    let recorder2 = DashboardRecorder::new();
+    let mut recorder2 = DashboardRecorder::new();
+
+    for (key, max_key) in bound_keys {
+        recorder2.add_bound_key(key, max_key);
+    }
 
     let recoder_fanout = FanoutBuilder::default()
         .add_recorder(recorder1.clone())

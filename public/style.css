@@ -34,6 +34,29 @@ strong {
   border-radius: 4px;
 }
 
+.header {
+  display: flex;
+  width: 100%;
+}
+
+.header .title {
+  font-family: Helvetica, Arial, sans-serif;
+  opacity: 1;
+  color: white;
+  font-size: 16px;
+  font-weight: 900;
+  flex: 1;
+}
+
+.header .subtitle {
+  font-family: Helvetica, Arial, sans-serif;
+  opacity: 1;
+  color: white;
+  font-size: 18px;
+  font-weight: 900;
+  margin-left: 1rem;
+}
+
 .columnbox {
   padding-right: 15px;
 }

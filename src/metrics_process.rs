@@ -1,3 +1,4 @@
+use metrics::Unit;
 use metrics::{describe_gauge, gauge};
 use std::time::Duration;
 
@@ -30,26 +31,40 @@ const PROCESS_MEMORY_USAGE: &str = "process.memory.usage";
 
 pub fn register_sysinfo_event() {
     describe_gauge!(SYSTEM_CPU_CORE, "System CPU cores number");
-    describe_gauge!(SYSTEM_CPU_USAGE, "System CPU usage in %");
-    describe_gauge!(SYSTEM_MEMORY_USAGE, "System Memory usage in %");
-    describe_gauge!(SYSTEM_MEMORY_TOTAL, "System Memory total in bytes");
-    describe_gauge!(SYSTEM_SWAP_USAGE, "System Swap usage in %");
-    describe_gauge!(SYSTEM_SWAP_TOTAL, "System Swap total in bytes");
-    describe_gauge!(SYSTEM_DISK_USAGE, "System disk usage in bytes");
+    describe_gauge!(SYSTEM_CPU_USAGE, Unit::Percent, "System CPU usage");
+    describe_gauge!(
+        SYSTEM_MEMORY_USAGE,
+        Unit::Percent,
+        "System Memory usage in %"
+    );
+    describe_gauge!(SYSTEM_MEMORY_TOTAL, Unit::Bytes, "System Memory total");
+    describe_gauge!(SYSTEM_SWAP_USAGE, Unit::Percent, "System Swap usage");
+    describe_gauge!(SYSTEM_SWAP_TOTAL, Unit::Bytes, "System Swap total");
+    describe_gauge!(SYSTEM_DISK_USAGE, Unit::Bytes, "System disk usage");
 
-    describe_gauge!(SYSTEM_NETWORK_UP_COUNT, "System network up sum in bytes");
-    describe_gauge!(SYSTEM_NETWORK_UP_SPEED, "System network up speed in bps");
+    describe_gauge!(SYSTEM_NETWORK_UP_COUNT, Unit::Bytes, "System network up");
+    describe_gauge!(
+        SYSTEM_NETWORK_UP_SPEED,
+        Unit::BitsPerSecond,
+        "System network up speed"
+    );
     describe_gauge!(
         SYSTEM_NETWORK_DOWN_COUNT,
-        "System network down sum in bytes"
+        Unit::Bytes,
+        "System network down sum"
     );
     describe_gauge!(
         SYSTEM_NETWORK_DOWN_SPEED,
-        "System network down speed in bps"
+        Unit::BitsPerSecond,
+        "System network down speed"
     );
 
-    describe_gauge!(PROCESS_CPU_USAGE, "Process cpu usage in %");
-    describe_gauge!(PROCESS_MEMORY_USAGE, "Process memory usage in bytes");
+    describe_gauge!(PROCESS_CPU_USAGE, Unit::Percent, "Process cpu usage");
+    describe_gauge!(
+        PROCESS_MEMORY_USAGE,
+        Unit::Bytes,
+        "Process memory usage"
+    );
 
     let pid = get_current_pid().expect("Should has");
     let mut sys = System::new_all();
