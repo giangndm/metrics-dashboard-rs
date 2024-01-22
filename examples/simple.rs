@@ -36,13 +36,13 @@ async fn main() -> Result<(), std::io::Error> {
         }
     });
 
-    // tokio::spawn(async move {
-    //     describe_gauge!("demo_live_time_max", Unit::Seconds, "Demo live time max");
-    //     loop {
-    //         tokio::time::sleep(Duration::from_secs(1)).await;
-    //         gauge!("demo_live_time_max", 10.0);
-    //     }
-    // });
+    tokio::spawn(async move {
+        describe_gauge!("demo_live_time_max", Unit::Seconds, "Demo live time max");
+        loop {
+            tokio::time::sleep(Duration::from_secs(1)).await;
+            gauge!("demo_live_time_max", 10.0);
+        }
+    });
 
     tokio::spawn(async move {
         describe_counter!("demo_metric2", "Demo metric2");
