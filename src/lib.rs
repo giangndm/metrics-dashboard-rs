@@ -37,7 +37,9 @@ use poem::endpoint::{EmbeddedFileEndpoint, EmbeddedFilesEndpoint};
 use rust_embed::RustEmbed;
 
 use recorder::{DashboardRecorder, MetricMeta, MetricValue};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
+
+use crate::recorder::ChartMeta;
 
 #[cfg(feature = "system")]
 mod metrics_process;
@@ -54,6 +56,27 @@ struct MetricQuery {
     keys: String,
 }
 
+#[derive(Debug, Clone, Default)]
+pub struct DashboardOptions {
+    pub charts: Vec<ChartType>,
+    /// Whether to include metrics that not mention in the charts options.
+    /// This is useful when you want to include all metrics in the dashboard.
+    pub include_default: bool,
+}
+
+#[derive(Debug, Serialize, Clone)]
+#[serde(tag = "type", content = "meta")]
+pub enum ChartType {
+    Line {
+        metric: String,
+        max_metric: Option<String>,
+    },
+    Bar {
+        metric: String,
+        max_metric: Option<String>,
+    },
+}
+
 #[handler]
 fn prometheus_metrics(Data(recorder): Data<&metrics_prometheus::Recorder<NoOp>>) -> String {
     prometheus::TextEncoder::new()
@@ -67,6 +90,11 @@ fn api_metrics(Data(recorder): Data<&DashboardRecorder>) -> Json<Vec<MetricMeta>
 }
 
 #[handler]
+fn api_charts(Data(recorder): Data<&DashboardRecorder>) -> Json<Vec<ChartMeta>> {
+    Json(recorder.charts())
+}
+
+#[handler]
 fn api_metrics_value(
     Data(recorder): Data<&DashboardRecorder>,
     Query(query): Query<MetricQuery>,
@@ -75,16 +103,12 @@ fn api_metrics_value(
     Json(recorder.metrics_value(keys))
 }
 
-pub fn build_dashboard_route(bound_keys: Vec<(&str, &str)>) -> Route {
+pub fn build_dashboard_route(opts: DashboardOptions) -> Route {
     let recorder1 = metrics_prometheus::Recorder::builder()
         .with_failure_strategy(strategy::NoOp)
         .build();
 
-    let mut recorder2 = DashboardRecorder::new();
-
-    for (key, max_key) in bound_keys {
-        recorder2.add_bound_key(key, max_key);
-    }
+    let recorder2 = DashboardRecorder::new(opts);
 
     let recoder_fanout = FanoutBuilder::default()
         .add_recorder(recorder1.clone())
@@ -99,6 +123,7 @@ pub fn build_dashboard_route(bound_keys: Vec<(&str, &str)>) -> Route {
     let route = Route::new()
         .at("/prometheus", prometheus_metrics.data(recorder1))
         .at("/api/metrics", api_metrics.data(recorder2.clone()))
+        .at("/api/charts", api_charts.data(recorder2.clone()))
         .at("/api/metrics_value", api_metrics_value.data(recorder2));
 
     #[cfg(not(feature = "embed"))]

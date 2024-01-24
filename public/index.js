@@ -9,7 +9,7 @@ import {
 const BusChannel = {};
 const CachedChannel = {};
 
-function Chart({ metric, desc, max_key, unit }) {
+function Chart({ metric, desc, chartType, meta, unit }) {
   const elm = useRef(null);
   const [value, setValue] = useState();
   const [maxValue, setMaxValue] = useState();
@@ -21,6 +21,16 @@ function Chart({ metric, desc, max_key, unit }) {
     const opts = Object.assign({}, window.ApexOptionsColumn);
     opts.title.text = "";
     opts.subtitle.text = "";
+    switch (chartType) {
+      case "Line":
+        opts.chart.type = "line";
+        break;
+      case "Bar":
+        opts.chart.type = "bar";
+        break;
+      default:
+        opts.chart.type = "line";
+    }
 
     opts.series[0].name = desc || metric;
     opts.series[0].data = data;
@@ -43,19 +53,21 @@ function Chart({ metric, desc, max_key, unit }) {
         ],
       };
 
-      if (max_key) {
+      if (meta?.max_metric) {
+        const max_key = meta?.max_metric;
         const maxv = CachedChannel[max_key] ? CachedChannel[max_key][1] : 0;
-        setMaxValue(maxv)
+        setMaxValue(maxv);
         options.annotations = {
           yaxis: [
             {
               y: maxv,
               borderColor: "#FEB019",
               fillColor: "#FEB019",
+              opacity: 1,
               label: {
                 style: {
                   color: "#000",
-                  background: "#FEB019"
+                  background: "#FEB019",
                 },
 
                 text: max_key + ": " + maxv,
@@ -77,7 +89,9 @@ function Chart({ metric, desc, max_key, unit }) {
     <div class="box columnbox mt-4">
       <div class="header">
         <h3 class="title">${desc || metric}</h3>
-        <h2 class="subtitle">${value || "--"} ${maxValue ? " / " + maxValue : ""} ${unit || ""}</h2>
+        <h2 class="subtitle">
+          ${value || "--"} ${maxValue ? " / " + maxValue : ""} ${unit || ""}
+        </h2>
       </div>
       <div ref=${elm}></div>
     </div>
@@ -85,19 +99,24 @@ function Chart({ metric, desc, max_key, unit }) {
 }
 
 function App() {
-  const [metrics, setMetrics] = useState([]);
+  const [charts, setCharts] = useState([]);
   useEffect(async () => {
-    const res = await fetch("api/metrics");
-    const metrics = await res.json();
-    setMetrics(metrics);
+    const res = await fetch("api/charts");
+    const charts = await res.json();
+    setCharts(charts);
 
-    const keys = metrics.map((m) => m.key).join(";");
+    const maxKeys = charts
+      .filter((m) => m.chart_type?.meta?.max_metric)
+      .map((m) => m.chart_type?.meta?.max_metric);
+    const keys = charts.map((m) => m.key);
     const load = async () => {
       let now = new Date();
-      let res = await fetch("api/metrics_value?keys=" + keys);
+      let res = await fetch(
+        "api/metrics_value?keys=" + [...keys, ...maxKeys].join(";")
+      );
       let values = await res.json();
       console.log("loaded", values);
-      values.map(({ key, value, unit, max_key }) => {
+      values.map(({ key, value }) => {
         if (BusChannel[key]) {
           BusChannel[key](now, value);
         }
@@ -117,12 +136,13 @@ function App() {
       <div class="container-fluid">
         <div class="main">
           <div class="row mt-4">
-            ${metrics.map(
+            ${charts.map(
               (m) =>
                 html`<${Chart}
                   metric=${m.key}
                   desc=${m.desc}
-                  max_key=${m.max_key}
+                  chartType=${m.chart_type.type}
+                  meta=${m.chart_type.meta}
                   unit=${m.unit}
                 />`
             )}

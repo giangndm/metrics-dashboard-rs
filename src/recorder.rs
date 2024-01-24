@@ -5,6 +5,8 @@ use std::{
     sync::{Arc, RwLock},
 };
 
+use crate::{ChartType, DashboardOptions};
+
 use self::{counter::SimpleCounter, gauge::SimpleGauge, histogram::SimpleHistogram};
 
 mod counter;
@@ -24,7 +26,6 @@ pub struct MetricMeta {
     typ: MetricType,
     desc: Option<String>,
     unit: Option<String>,
-    max_key: Option<String>,
 }
 
 #[derive(Debug, Serialize, Clone)]
@@ -35,6 +36,14 @@ pub struct MetricValue {
     #[serde(rename = "value", skip_serializing_if = "Option::is_none")]
     value_f64: Option<f64>,
     // unit: Option<String>,
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct ChartMeta {
+    desc: Option<String>,
+    key: String,
+    chart_type: ChartType,
+    unit: Option<String>,
 }
 
 #[derive(Default)]
@@ -65,7 +74,8 @@ impl DashboardStorage {
 pub struct DashboardRecorder {
     storage: Arc<RwLock<DashboardStorage>>,
     metrics: Arc<RwLock<HashMap<String, MetricMeta>>>,
-    bound_keys: Arc<RwLock<HashMap<String, String>>>,
+    charts: Arc<HashMap<String, ChartMeta>>,
+    options: DashboardOptions,
 }
 
 /// The `DashboardRecorder` struct represents a recorder for metrics dashboard.
@@ -76,27 +86,30 @@ impl DashboardRecorder {
     /// # Returns
     ///
     /// A new instance of `DashboardRecorder`.
-    pub fn new() -> Self {
+    pub fn new(opts: DashboardOptions) -> Self {
+        let mut charts = HashMap::<String, ChartMeta>::new();
+        for chart in opts.charts.iter() {
+            let metric = match chart {
+                ChartType::Line { metric, .. } => metric,
+                ChartType::Bar { metric, .. } => metric,
+            };
+            charts.insert(
+                metric.clone(),
+                ChartMeta {
+                    desc: None,
+                    key: metric.clone(),
+                    chart_type: chart.clone(),
+                    unit: None,
+                },
+            );
+        }
+
         Self {
             storage: Default::default(),
             metrics: Arc::new(RwLock::new(HashMap::new())),
-            bound_keys: Arc::new(RwLock::new(HashMap::new())),
+            options: opts,
+            charts: Arc::new(charts),
         }
-    }
-
-    /// Adds a bound key pair to the recorder. 
-    /// This is used to specify the maximum value of a metric.
-    /// For example, if you want to specify the maximum key for the `system.cpu.usage` metric,
-    /// you can add a bound key pair of `("system.cpu.usage", "system.cpu.usage.max")`.
-    /// Given system.cpu.usage.max is registered.
-    ///
-    /// # Arguments
-    ///
-    /// * `key` - The key to add.
-    /// * `max_key` - The maximum key value.
-    pub fn add_bound_key(&mut self, key: &str, max_key: &str) {
-        let mut bound_keys = self.bound_keys.write().expect("Should lock");
-        bound_keys.insert(key.to_string(), max_key.to_string());
     }
 
     /// Retrieves the metrics as a vector of `MetricMeta`.
@@ -111,6 +124,54 @@ impl DashboardRecorder {
             res.push(meta.clone());
         }
         res.sort_by_cached_key(|m: &MetricMeta| m.key.clone());
+        res
+    }
+
+    pub fn charts(&self) -> Vec<ChartMeta> {
+        let mut res = vec![];
+        let charts = &*self.charts;
+        let metrics = &*self.metrics.read().expect("Should lock");
+        for (_key, meta) in charts.iter() {
+            if let Some(metric) = metrics.get(&meta.key) {
+                let mut meta = meta.clone();
+                meta.unit = metric.unit.clone();
+                meta.desc = metric.desc.clone();
+                res.push(meta.clone());
+            }
+        }
+
+        if self.options.include_default {
+            let mut max_keys = HashMap::<String, bool>::new();
+            for (_k, chart) in charts.iter() {
+                match &chart.chart_type {
+                    ChartType::Line { max_metric, .. } => {
+                        if let Some(max_metric) = max_metric {
+                            max_keys.insert(max_metric.clone(), true);
+                        }
+                    }
+                    ChartType::Bar { max_metric, .. } => {
+                        if let Some(max_metric) = max_metric {
+                            max_keys.insert(max_metric.clone(), true);
+                        }
+                    }
+                }
+            }
+
+            for (_k, metric) in metrics.iter() {
+                if !charts.contains_key(&metric.key) && !max_keys.contains_key(&metric.key) {
+                    res.push(ChartMeta {
+                        desc: metric.desc.clone(),
+                        key: metric.key.clone(),
+                        chart_type: ChartType::Line {
+                            metric: metric.key.clone(),
+                            max_metric: None,
+                        },
+                        unit: metric.unit.clone(),
+                    });
+                }
+            }
+        }
+        res.sort_by_cached_key(|m: &ChartMeta| m.key.clone());
         res
     }
 
@@ -170,7 +231,6 @@ impl Recorder for DashboardRecorder {
         description: metrics::SharedString,
     ) {
         let mut metrics = self.metrics.write().expect("Should ok");
-        let bound_keys = self.bound_keys.read().expect("Should lock");
         if let Some(metric) = metrics.get_mut(key.as_str()) {
             metric.desc = Some(description.to_string());
         } else {
@@ -181,7 +241,6 @@ impl Recorder for DashboardRecorder {
                     typ: MetricType::Counter,
                     desc: Some(description.to_string()),
                     unit: unit.map(|u| u.as_canonical_label().to_string()),
-                    max_key: bound_keys.get(key.as_str()).cloned(),
                 },
             );
         }
@@ -194,7 +253,6 @@ impl Recorder for DashboardRecorder {
         description: metrics::SharedString,
     ) {
         let mut metrics = self.metrics.write().expect("Should ok");
-        let bound_keys = self.bound_keys.read().expect("Should lock");
         if let Some(metric) = metrics.get_mut(key.as_str()) {
             metric.desc = Some(description.to_string())
         } else {
@@ -205,7 +263,6 @@ impl Recorder for DashboardRecorder {
                     typ: MetricType::Gauge,
                     desc: Some(description.to_string()),
                     unit: unit.map(|u| u.as_canonical_label().to_string()),
-                    max_key: bound_keys.get(key.as_str()).cloned(),
                 },
             );
         }
@@ -218,7 +275,6 @@ impl Recorder for DashboardRecorder {
         description: metrics::SharedString,
     ) {
         let mut metrics = self.metrics.write().expect("Should ok");
-        let bound_keys = self.bound_keys.read().expect("Should lock");
         if let Some(metric) = metrics.get_mut(key.as_str()) {
             metric.desc = Some(description.to_string())
         } else {
@@ -229,7 +285,6 @@ impl Recorder for DashboardRecorder {
                     typ: MetricType::Histogram,
                     desc: Some(description.to_string()),
                     unit: unit.map(|u| u.as_canonical_label().to_string()),
-                    max_key: bound_keys.get(key.as_str()).cloned(),
                 },
             );
         }
@@ -237,7 +292,6 @@ impl Recorder for DashboardRecorder {
 
     fn register_counter(&self, key: &Key) -> metrics::Counter {
         let mut metrics = self.metrics.write().expect("Should ok");
-        let bound_keys = self.bound_keys.read().expect("Should lock");
         if !metrics.contains_key(key.name()) {
             metrics.insert(
                 key.name().to_string(),
@@ -246,7 +300,6 @@ impl Recorder for DashboardRecorder {
                     typ: MetricType::Counter,
                     desc: None,
                     unit: None,
-                    max_key: bound_keys.get(key.name()).cloned(),
                 },
             );
         }
@@ -262,7 +315,6 @@ impl Recorder for DashboardRecorder {
 
     fn register_gauge(&self, key: &Key) -> metrics::Gauge {
         let mut metrics = self.metrics.write().expect("Should ok");
-        let bound_keys = self.bound_keys.read().expect("Should lock");
         if !metrics.contains_key(key.name()) {
             metrics.insert(
                 key.name().to_string(),
@@ -271,7 +323,6 @@ impl Recorder for DashboardRecorder {
                     typ: MetricType::Gauge,
                     desc: None,
                     unit: None,
-                    max_key: bound_keys.get(key.name()).cloned(),
                 },
             );
         }
@@ -287,7 +338,6 @@ impl Recorder for DashboardRecorder {
 
     fn register_histogram(&self, key: &Key) -> metrics::Histogram {
         let mut metrics = self.metrics.write().expect("Should ok");
-        let bound_keys = self.bound_keys.read().expect("Should lock");
         if !metrics.contains_key(key.name()) {
             metrics.insert(
                 key.name().to_string(),
@@ -296,7 +346,6 @@ impl Recorder for DashboardRecorder {
                     typ: MetricType::Histogram,
                     desc: None,
                     unit: None,
-                    max_key: bound_keys.get(key.name()).cloned(),
                 },
             );
         }

@@ -1,7 +1,7 @@
 use std::time::{Duration, Instant};
 
 use metrics::{describe_counter, describe_gauge, gauge, increment_counter, Unit};
-use metrics_dashboard::{build_dashboard_route, HttpMetricMiddleware};
+use metrics_dashboard::{build_dashboard_route, ChartType, DashboardOptions, HttpMetricMiddleware};
 use poem::{
     get, handler, listener::TcpListener, middleware::Tracing, web::Path, EndpointExt, Route, Server,
 };
@@ -18,12 +18,17 @@ async fn main() -> Result<(), std::io::Error> {
     }
     tracing_subscriber::fmt::init();
 
+    let dashboard_options = DashboardOptions {
+        charts: vec![ChartType::Line {
+            metric: "demo_live_time".to_string(),
+            max_metric: Some("demo_live_time_max".to_string()),
+        }],
+        include_default: true,
+    };
+
     let app = Route::new()
         .at("/hello/:name", get(hello))
-        .nest(
-            "/dashboard/",
-            build_dashboard_route(vec![("demo_live_time", "demo_live_time_max")]),
-        )
+        .nest("/dashboard/", build_dashboard_route(dashboard_options))
         .with(HttpMetricMiddleware)
         .with(Tracing);
 
