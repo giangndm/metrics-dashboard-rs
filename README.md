@@ -36,6 +36,19 @@ async fn main() -> Result<(), std::io::Error> {
     }
     tracing_subscriber::fmt::init();
 
+    let dashboard_options = DashboardOptions {
+        custom_charts: vec![
+            ChartType::Line {
+                metrics: vec![
+                    "demo_live_time".to_string(),
+                    "demo_live_time_max".to_string(),
+                ],
+                desc: Some("Demo metric line".to_string()),
+            }
+        ],
+        include_default: true,
+    };
+
     let app = Route::new()
         .at("/hello/:name", get(hello))
         .nest("/dashboard/", build_dashboard_route())
@@ -46,6 +59,14 @@ async fn main() -> Result<(), std::io::Error> {
         loop {
             tokio::time::sleep(Duration::from_secs(1)).await;
             increment_counter!("demo_metric1");
+        }
+    });
+
+    tokio::spawn(async move {
+        describe_counter!("demo_metric2", "Demo metric2");
+        loop {
+            tokio::time::sleep(Duration::from_secs(1)).await;
+            increment_counter!("demo_metric2");
         }
     });
 

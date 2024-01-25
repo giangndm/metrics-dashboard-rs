@@ -25,7 +25,7 @@ pub struct MetricMeta {
     pub key: String,
     typ: MetricType,
     pub desc: Option<String>,
-    unit: Option<String>,
+    pub unit: Option<String>,
 }
 
 #[derive(Debug, Serialize, Clone)]

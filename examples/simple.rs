@@ -19,14 +19,15 @@ async fn main() -> Result<(), std::io::Error> {
     tracing_subscriber::fmt::init();
 
     let dashboard_options = DashboardOptions {
-        charts: vec![
+        custom_charts: vec![
             ChartType::Line {
                 metrics: vec![
                     "demo_live_time".to_string(),
                     "demo_live_time_max".to_string(),
                     "http_requests_total".to_string(),
                 ],
-                desc: Some("Demo metric line".to_string()),
+                desc: "Demo metric line".to_string(),
+                unit: Unit::Seconds.as_canonical_label().to_string(),
             },
             ChartType::Bar {
                 metrics: vec![
@@ -34,7 +35,8 @@ async fn main() -> Result<(), std::io::Error> {
                     "http_requests_total".to_string(),
                     "demo_metric4".to_string(),
                 ],
-                desc: Some("Demo metric bar".to_string()),
+                desc: "Demo metric bar".to_string(),
+                unit: Unit::Count.as_canonical_label().to_string(),
             },
         ],
         include_default: true,

@@ -71,7 +71,8 @@ struct MetricQuery {
 
 #[derive(Debug, Clone, Default)]
 pub struct DashboardOptions {
-    pub charts: Vec<ChartType>,
+    /// This is custom charts that you want to show in dashboard.
+    pub custom_charts: Vec<ChartType>,
     /// Whether to include metrics that not mention in the charts options.
     /// This is useful when you want to include all metrics in the dashboard.
     pub include_default: bool,
@@ -82,19 +83,14 @@ pub struct DashboardOptions {
 pub enum ChartType {
     Line {
         metrics: Vec<String>,
-        desc: Option<String>,
+        desc: String,
+        unit: String,
     },
     Bar {
         metrics: Vec<String>,
-        desc: Option<String>,
+        desc: String,
+        unit: String,
     },
-}
-
-#[derive(Debug, Serialize, Clone)]
-pub struct ChartMeta {
-    desc: Option<String>,
-    keys: Vec<String>,
-    chart_type: ChartType,
 }
 
 #[handler]
@@ -105,34 +101,21 @@ fn prometheus_metrics(Data(recorder): Data<&metrics_prometheus::Recorder<NoOp>>)
 }
 
 #[handler]
-fn api_charts(Data(recorder): Data<&DashboardRecorder>) -> Json<Vec<ChartMeta>> {
+fn api_charts(Data(recorder): Data<&DashboardRecorder>) -> Json<Vec<ChartType>> {
     let option = &recorder.options;
     let mut res = vec![];
-    for chart in option.charts.iter() {
-        let (keys, desc) = match chart {
-            ChartType::Line { metrics, desc } => (metrics.clone(), desc.clone()),
-            ChartType::Bar { metrics, desc } => (metrics.clone(), desc.clone()),
-        };
-        let meta = ChartMeta {
-            desc,
-            keys,
-            chart_type: chart.clone(),
-        };
-        res.push(meta);
+    for chart in option.custom_charts.iter() {
+        res.push(chart.clone());
     }
     if option.include_default {
         let metrics = recorder.metrics();
         for meta in metrics.iter() {
-            let chart_type = ChartType::Line {
+            let chart = ChartType::Line {
                 metrics: vec![meta.key.clone()],
-                desc: meta.desc.clone(),
+                desc: meta.desc.clone().unwrap_or_else(|| meta.key.clone()),
+                unit: meta.unit.clone().unwrap_or_else(|| "".to_string()),
             };
-            let meta = ChartMeta {
-                desc: meta.desc.clone(),
-                keys: vec![meta.key.clone()],
-                chart_type,
-            };
-            res.push(meta);
+            res.push(chart.clone());
         }
     }
 
