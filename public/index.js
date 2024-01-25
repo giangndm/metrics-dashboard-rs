@@ -8,120 +8,190 @@ import {
 
 const BusChannel = {};
 const CachedChannel = {};
+const Metrics = {};
 
-function Chart({ metric, desc, chartType, meta, unit }) {
+const LineChart = ({ idx, metrics, desc, meta, unit }) => {
   const elm = useRef(null);
   const [value, setValue] = useState();
-  const [maxValue, setMaxValue] = useState();
   useEffect(() => {
     if (!elm) {
       return;
     }
-    const data = CachedChannel[metric] ? [CachedChannel[metric]] : [];
-    const opts = Object.assign({}, window.ApexOptionsColumn);
-    opts.title.text = "";
-    opts.subtitle.text = "";
-    switch (chartType) {
-      case "Line":
-        opts.chart.type = "line";
-        break;
-      case "Bar":
-        opts.chart.type = "bar";
-        break;
-      default:
-        opts.chart.type = "line";
+    if (!metrics) {
+      return;
     }
+    const isMulti = metrics?.length > 1;
+    const data = {};
+    const opts = Object.assign({}, window.ApexOptionsLine);
 
-    opts.series[0].name = desc || metric;
-    opts.series[0].data = data;
+    metrics?.map((m) => {
+      const key = m;
+      const value = CachedChannel[key] ? [CachedChannel[key]] : [];
+      data[key] = value;
+    });
+
+    opts.series = metrics?.map((m) => {
+      return {
+        name: m,
+        data: data[m],
+      };
+    });
 
     const chart = new ApexCharts(elm.current, opts);
     chart.render();
-    BusChannel[metric] = (date, value) => {
-      data.push([date, value]);
-      setValue(value);
 
-      if (data.length > 100) {
-        data.shift();
-      }
+    BusChannel[idx] = (date) => {
+      metrics?.map((m) => {
+        const value = CachedChannel[m] ? CachedChannel[m][1] : 0;
+        if (!isMulti) {
+          setValue(value);
+        }
+        data[m].push([date, value]);
+        if (data[m].length > 100) {
+          data[m].shift();
+        }
+      });
 
       const options = {
-        series: [
-          {
-            data,
-          },
-        ],
+        series: metrics?.map((m) => {
+          return {
+            name: m,
+            data: data[m],
+          };
+        }),
       };
-
-      if (meta?.max_metric) {
-        const max_key = meta?.max_metric;
-        const maxv = CachedChannel[max_key] ? CachedChannel[max_key][1] : 0;
-        setMaxValue(maxv);
-        options.annotations = {
-          yaxis: [
-            {
-              y: maxv,
-              borderColor: "#FEB019",
-              fillColor: "#FEB019",
-              opacity: 1,
-              label: {
-                style: {
-                  color: "#000",
-                  background: "#FEB019",
-                },
-
-                text: max_key + ": " + maxv,
-              },
-            },
-          ],
-        };
-      }
-
       chart.updateOptions(options, false, false);
     };
 
     return () => {
-      delete BusChannel[metric];
+      delete BusChannel[idx];
     };
-  }, [elm]);
+  }, [elm, metrics]);
 
   return html` <div class="col-md-4">
     <div class="box columnbox mt-4">
       <div class="header">
-        <h3 class="title">${desc || metric}</h3>
-        <h2 class="subtitle">
-          ${value || "--"} ${maxValue ? " / " + maxValue : ""} ${unit || ""}
-        </h2>
+        <h3 class="title">${desc || metrics?.join(",")}</h3>
+        ${metrics?.length === 1 &&
+        html`<h2 class="subtitle">${value || "--"} ${unit ? unit : ""}</h2>`}
       </div>
       <div ref=${elm}></div>
     </div>
   </div>`;
+};
+
+const BarChart = ({ idx, metrics, desc, meta, unit }) => {
+  const elm = useRef(null);
+  const [value, setValue] = useState();
+  useEffect(() => {
+    if (!elm) {
+      return;
+    }
+    if (!metrics) {
+      return;
+    }
+    const isMulti = metrics?.length > 1;
+    const opts = Object.assign({}, window.ApexOptionsBar);
+
+    opts.series[0].data = metrics?.map((m) => {
+      const value = CachedChannel[m] ? CachedChannel[m][1] : 0;
+      return {
+        x: m,
+        y: value,
+      };
+    });
+
+    const chart = new ApexCharts(elm.current, opts);
+    chart.render();
+
+    BusChannel[idx] = (date) => {
+      metrics?.map((m) => {
+        const value = CachedChannel[m] ? CachedChannel[m][1] : 0;
+        if (!isMulti) {
+          setValue(value);
+        }
+      });
+
+      const options = {
+        series: [
+          {
+            data: metrics?.map((m) => {
+              const value = CachedChannel[m] ? CachedChannel[m][1] : 0;
+              return {
+                x: m,
+                y: value,
+              };
+            }),
+          },
+        ],
+      };
+      chart.updateOptions(options, false, false);
+    };
+
+    return () => {
+      delete BusChannel[idx];
+    };
+  }, [elm, metrics]);
+
+  return html` <div class="col-md-4">
+    <div class="box columnbox mt-4">
+      <div class="header">
+        <h3 class="title">${desc || metrics?.join(",")}</h3>
+        ${metrics?.length === 1 &&
+        html`<h2 class="subtitle">${value || "--"} ${unit ? unit : ""}</h2>`}
+      </div>
+      <div ref=${elm}></div>
+    </div>
+  </div>`;
+};
+
+function renderChart({ idx, chartType, metrics, desc, meta, unit }) {
+  switch (chartType) {
+    case "Bar":
+      return html`<${BarChart}
+        idx=${idx}
+        metrics=${metrics}
+        desc=${desc}
+        meta=${meta}
+        unit=${unit}
+      />`;
+    case "Line":
+    default:
+      return html`<${LineChart}
+        idx=${idx}
+        metrics=${metrics}
+        desc=${desc}
+        meta=${meta}
+        unit=${unit}
+      />`;
+  }
 }
 
 function App() {
   const [charts, setCharts] = useState([]);
   useEffect(async () => {
-    const res = await fetch("api/charts");
-    const charts = await res.json();
+    const chartres = await fetch("api/charts");
+    const charts = await chartres.json();
+    const metricres = await fetch("api/metrics");
+    const metrics = await metricres.json();
+    metrics.map((m) => {
+      Metrics[m.key] = m;
+    });
     setCharts(charts);
 
-    const maxKeys = charts
-      .filter((m) => m.chart_type?.meta?.max_metric)
-      .map((m) => m.chart_type?.meta?.max_metric);
-    const keys = charts.map((m) => m.key);
+    const rawKeys = charts.map((m) => m.keys).flat();
+    const keys = [...new Set(rawKeys)];
     const load = async () => {
       let now = new Date();
-      let res = await fetch(
-        "api/metrics_value?keys=" + [...keys, ...maxKeys].join(";")
-      );
+      let res = await fetch("api/metrics_value?keys=" + keys?.join(";"));
       let values = await res.json();
       console.log("loaded", values);
       values.map(({ key, value }) => {
-        if (BusChannel[key]) {
-          BusChannel[key](now, value);
-        }
         CachedChannel[key] = [now, value];
       });
+      for (const idx in BusChannel) {
+        BusChannel[idx](now);
+      }
     };
     load();
     const interval = setInterval(load, 5000);
@@ -136,15 +206,15 @@ function App() {
       <div class="container-fluid">
         <div class="main">
           <div class="row mt-4">
-            ${charts.map(
-              (m) =>
-                html`<${Chart}
-                  metric=${m.key}
-                  desc=${m.desc}
-                  chartType=${m.chart_type.type}
-                  meta=${m.chart_type.meta}
-                  unit=${m.unit}
-                />`
+            ${charts.map((c, idx) =>
+              renderChart({
+                idx,
+                metrics: c.keys,
+                desc: c.desc,
+                meta: c.chart_type.meta,
+                unit: Metrics[c.keys[0]].unit,
+                chartType: c.chart_type.type,
+              })
             )}
           </div>
         </div>

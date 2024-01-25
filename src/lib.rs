@@ -16,6 +16,8 @@
 //! describe_counter!("demo_metric1", "Demo metric1");
 //! increment_counter!("demo_metric1");
 //! ```
+use std::vec;
+
 #[cfg(feature = "system")]
 use metrics_process::register_sysinfo_event;
 use metrics_prometheus::failure::strategy::{self, NoOp};
@@ -38,8 +40,6 @@ use rust_embed::RustEmbed;
 
 use recorder::{DashboardRecorder, MetricMeta, MetricValue};
 use serde::{Deserialize, Serialize};
-
-use crate::recorder::ChartMeta;
 
 #[cfg(feature = "system")]
 mod metrics_process;
@@ -68,13 +68,20 @@ pub struct DashboardOptions {
 #[serde(tag = "type", content = "meta")]
 pub enum ChartType {
     Line {
-        metric: String,
-        max_metric: Option<String>,
+        metrics: Vec<String>,
+        desc: Option<String>,
     },
     Bar {
-        metric: String,
-        max_metric: Option<String>,
+        metrics: Vec<String>,
+        desc: Option<String>,
     },
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct ChartMeta {
+    desc: Option<String>,
+    keys: Vec<String>,
+    chart_type: ChartType,
 }
 
 #[handler]
@@ -85,13 +92,43 @@ fn prometheus_metrics(Data(recorder): Data<&metrics_prometheus::Recorder<NoOp>>)
 }
 
 #[handler]
-fn api_metrics(Data(recorder): Data<&DashboardRecorder>) -> Json<Vec<MetricMeta>> {
-    Json(recorder.metrics())
+fn api_charts(Data(recorder): Data<&DashboardRecorder>) -> Json<Vec<ChartMeta>> {
+    let option = &recorder.options;
+    let mut res = vec![];
+    for chart in option.charts.iter() {
+        let (keys, desc) = match chart {
+            ChartType::Line { metrics, desc } => (metrics.clone(), desc.clone()),
+            ChartType::Bar { metrics, desc } => (metrics.clone(), desc.clone()),
+        };
+        let meta = ChartMeta {
+            desc,
+            keys,
+            chart_type: chart.clone(),
+        };
+        res.push(meta);
+    }
+    if option.include_default {
+        let metrics = recorder.metrics();
+        for meta in metrics.iter() {
+            let chart_type = ChartType::Line {
+                metrics: vec![meta.key.clone()],
+                desc: meta.desc.clone(),
+            };
+            let meta = ChartMeta {
+                desc: meta.desc.clone(),
+                keys: vec![meta.key.clone()],
+                chart_type,
+            };
+            res.push(meta);
+        }
+    }
+
+    Json(res)
 }
 
 #[handler]
-fn api_charts(Data(recorder): Data<&DashboardRecorder>) -> Json<Vec<ChartMeta>> {
-    Json(recorder.charts())
+fn api_metrics(Data(recorder): Data<&DashboardRecorder>) -> Json<Vec<MetricMeta>> {
+    Json(recorder.metrics())
 }
 
 #[handler]

@@ -5,7 +5,7 @@ use std::{
     sync::{Arc, RwLock},
 };
 
-use crate::{ChartType, DashboardOptions};
+use crate::DashboardOptions;
 
 use self::{counter::SimpleCounter, gauge::SimpleGauge, histogram::SimpleHistogram};
 
@@ -22,9 +22,9 @@ pub enum MetricType {
 
 #[derive(Debug, Serialize, Clone)]
 pub struct MetricMeta {
-    key: String,
+    pub key: String,
     typ: MetricType,
-    desc: Option<String>,
+    pub desc: Option<String>,
     unit: Option<String>,
 }
 
@@ -35,15 +35,6 @@ pub struct MetricValue {
     value_u64: Option<u64>,
     #[serde(rename = "value", skip_serializing_if = "Option::is_none")]
     value_f64: Option<f64>,
-    // unit: Option<String>,
-}
-
-#[derive(Debug, Serialize, Clone)]
-pub struct ChartMeta {
-    desc: Option<String>,
-    key: String,
-    chart_type: ChartType,
-    unit: Option<String>,
 }
 
 #[derive(Default)]
@@ -72,10 +63,9 @@ impl DashboardStorage {
 
 #[derive(Clone)]
 pub struct DashboardRecorder {
+    pub options: DashboardOptions,
     storage: Arc<RwLock<DashboardStorage>>,
     metrics: Arc<RwLock<HashMap<String, MetricMeta>>>,
-    charts: Arc<HashMap<String, ChartMeta>>,
-    options: DashboardOptions,
 }
 
 /// The `DashboardRecorder` struct represents a recorder for metrics dashboard.
@@ -87,28 +77,10 @@ impl DashboardRecorder {
     ///
     /// A new instance of `DashboardRecorder`.
     pub fn new(opts: DashboardOptions) -> Self {
-        let mut charts = HashMap::<String, ChartMeta>::new();
-        for chart in opts.charts.iter() {
-            let metric = match chart {
-                ChartType::Line { metric, .. } => metric,
-                ChartType::Bar { metric, .. } => metric,
-            };
-            charts.insert(
-                metric.clone(),
-                ChartMeta {
-                    desc: None,
-                    key: metric.clone(),
-                    chart_type: chart.clone(),
-                    unit: None,
-                },
-            );
-        }
-
         Self {
+            options: opts,
             storage: Default::default(),
             metrics: Arc::new(RwLock::new(HashMap::new())),
-            options: opts,
-            charts: Arc::new(charts),
         }
     }
 
@@ -124,54 +96,6 @@ impl DashboardRecorder {
             res.push(meta.clone());
         }
         res.sort_by_cached_key(|m: &MetricMeta| m.key.clone());
-        res
-    }
-
-    pub fn charts(&self) -> Vec<ChartMeta> {
-        let mut res = vec![];
-        let charts = &*self.charts;
-        let metrics = &*self.metrics.read().expect("Should lock");
-        for (_key, meta) in charts.iter() {
-            if let Some(metric) = metrics.get(&meta.key) {
-                let mut meta = meta.clone();
-                meta.unit = metric.unit.clone();
-                meta.desc = metric.desc.clone();
-                res.push(meta.clone());
-            }
-        }
-
-        if self.options.include_default {
-            let mut max_keys = HashMap::<String, bool>::new();
-            for (_k, chart) in charts.iter() {
-                match &chart.chart_type {
-                    ChartType::Line { max_metric, .. } => {
-                        if let Some(max_metric) = max_metric {
-                            max_keys.insert(max_metric.clone(), true);
-                        }
-                    }
-                    ChartType::Bar { max_metric, .. } => {
-                        if let Some(max_metric) = max_metric {
-                            max_keys.insert(max_metric.clone(), true);
-                        }
-                    }
-                }
-            }
-
-            for (_k, metric) in metrics.iter() {
-                if !charts.contains_key(&metric.key) && !max_keys.contains_key(&metric.key) {
-                    res.push(ChartMeta {
-                        desc: metric.desc.clone(),
-                        key: metric.key.clone(),
-                        chart_type: ChartType::Line {
-                            metric: metric.key.clone(),
-                            max_metric: None,
-                        },
-                        unit: metric.unit.clone(),
-                    });
-                }
-            }
-        }
-        res.sort_by_cached_key(|m: &ChartMeta| m.key.clone());
         res
     }
 

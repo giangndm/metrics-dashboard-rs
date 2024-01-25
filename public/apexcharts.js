@@ -46,7 +46,54 @@ window.Apex = {
   },
 };
 
-window.ApexOptionsColumn = {
+window.ApexOptionsBar = {
+  plotOptions: {
+    bar: {
+      horizontal: true
+    }
+  },
+  chart: {
+    height: 250,
+    type: "bar",
+    animations: {
+      enabled: true,
+    },
+    toolbar: {
+      show: false,
+    },
+    zoom: {
+      enabled: false,
+    },
+  },
+  dataLabels: {
+    enabled: true,
+  },
+  stroke: {
+    width: 2,
+  },
+  series: [
+    {
+      data: [],
+    },
+  ],
+  fill: {
+    type: "gradient",
+    gradient: {
+      shade: "dark",
+      type: "vertical",
+      shadeIntensity: 0.5,
+      inverseColors: false,
+      opacityFrom: 1,
+      opacityTo: 0.8,
+      stops: [0, 100],
+    },
+  },
+  legend: {
+    show: true,
+  },
+};
+
+window.ApexOptionsLine = {
   chart: {
     height: 250,
     type: "line",
@@ -72,22 +119,6 @@ window.ApexOptionsColumn = {
       data: [],
     },
   ],
-  title: {
-    text: "--",
-    align: "left",
-    style: {
-      fontSize: "16px",
-    },
-  },
-  subtitle: {
-    text: '--',
-    floating: true,
-    align: 'right',
-    offsetY: 0,
-    style: {
-      fontSize: '22px'
-    }
-  },
   fill: {
     type: "gradient",
     gradient: {

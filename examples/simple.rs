@@ -19,10 +19,24 @@ async fn main() -> Result<(), std::io::Error> {
     tracing_subscriber::fmt::init();
 
     let dashboard_options = DashboardOptions {
-        charts: vec![ChartType::Line {
-            metric: "demo_live_time".to_string(),
-            max_metric: Some("demo_live_time_max".to_string()),
-        }],
+        charts: vec![
+            ChartType::Line {
+                metrics: vec![
+                    "demo_live_time".to_string(),
+                    "demo_live_time_max".to_string(),
+                    "http_requests_total".to_string(),
+                ],
+                desc: Some("Demo metric line".to_string()),
+            },
+            ChartType::Bar {
+                metrics: vec![
+                    "demo_metric2".to_string(),
+                    "http_requests_total".to_string(),
+                    "demo_metric4".to_string(),
+                ],
+                desc: Some("Demo metric bar".to_string()),
+            },
+        ],
         include_default: true,
     };
 
@@ -45,7 +59,7 @@ async fn main() -> Result<(), std::io::Error> {
         describe_gauge!("demo_live_time_max", Unit::Seconds, "Demo live time max");
         loop {
             tokio::time::sleep(Duration::from_secs(1)).await;
-            gauge!("demo_live_time_max", 10.0);
+            gauge!("demo_live_time_max", 100.0);
         }
     });
 
