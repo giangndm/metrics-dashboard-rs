@@ -31,12 +31,12 @@ impl<E: Endpoint> Endpoint for HttpMetricMiddlewareEndpoint<E> {
         match res {
             Ok(resp) => {
                 let resp = resp.into_response();
-                metrics::increment_counter!("http_requests_total");
-                metrics::histogram!("http_requests_duration_seconds", latency.as_secs_f64());
+                metrics::counter!("http_requests_total").increment(1);
+                metrics::histogram!("http_requests_duration_seconds").record(latency.as_secs_f64());
                 Ok(resp)
             }
             Err(err) => {
-                metrics::increment_counter!("http_requests_error");
+                metrics::counter!("http_requests_error").increment(1);
                 Err(err)
             }
         }

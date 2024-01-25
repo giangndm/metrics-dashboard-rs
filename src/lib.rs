@@ -6,13 +6,14 @@
 //! use poem::Route;
 //!
 //! let dashboard_options = DashboardOptions {
-//!     charts: vec![
+//!     custom_charts: vec![
 //!         ChartType::Line {
 //!             metrics: vec![
 //!                 "demo_live_time".to_string(),
 //!                 "demo_live_time_max".to_string(),
 //!             ],
-//!             desc: Some("Demo metric line".to_string()),
+//!             desc: "Demo metric line".to_string(),
+//!             unit: "Seconds".to_string(),
 //!         },
 //!     ],
 //!     include_default: true,
@@ -24,10 +25,10 @@
 //! After init dashboard route, all of metrics defined metric will be exposed.
 //!
 //! ```rust
-//! use metrics::{describe_counter, increment_counter};
+//! use metrics::{describe_counter, counter};
 //!
 //! describe_counter!("demo_metric1", "Demo metric1");
-//! increment_counter!("demo_metric1");
+//! counter!("demo_metric1").increment(1);
 //! ```
 use std::vec;
 
@@ -148,8 +149,7 @@ pub fn build_dashboard_route(opts: DashboardOptions) -> Route {
         .add_recorder(recorder2.clone())
         .build();
 
-    metrics::set_boxed_recorder(Box::new(recoder_fanout))
-        .expect("Should register a recorder successfull");
+    metrics::set_global_recorder(recoder_fanout).expect("Should register a recorder successfull");
     #[cfg(feature = "system")]
     register_sysinfo_event();
 

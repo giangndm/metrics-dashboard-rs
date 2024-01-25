@@ -1,6 +1,6 @@
 use std::time::{Duration, Instant};
 
-use metrics::{describe_counter, describe_gauge, gauge, increment_counter, Unit};
+use metrics::{counter, describe_counter, describe_gauge, gauge, Unit};
 use metrics_dashboard::{build_dashboard_route, ChartType, DashboardOptions, HttpMetricMiddleware};
 use poem::{
     get, handler, listener::TcpListener, middleware::Tracing, web::Path, EndpointExt, Route, Server,
@@ -20,22 +20,21 @@ async fn main() -> Result<(), std::io::Error> {
 
     let dashboard_options = DashboardOptions {
         custom_charts: vec![
-            ChartType::Line {
-                metrics: vec![
-                    "demo_live_time".to_string(),
-                    "demo_live_time_max".to_string(),
-                    "http_requests_total".to_string(),
-                ],
-                desc: "Demo metric line".to_string(),
-                unit: Unit::Seconds.as_canonical_label().to_string(),
-            },
             ChartType::Bar {
                 metrics: vec![
                     "demo_metric2".to_string(),
-                    "http_requests_total".to_string(),
+                    "demo_metric3".to_string(),
                     "demo_metric4".to_string(),
                 ],
                 desc: "Demo metric bar".to_string(),
+                unit: Unit::Count.as_canonical_label().to_string(),
+            },
+            ChartType::Line {
+                metrics: vec![
+                    "http_requests_total".to_string(),
+                    "http_requests_errors".to_string(),
+                ],
+                desc: "Http requests".to_string(),
                 unit: Unit::Count.as_canonical_label().to_string(),
             },
         ],
@@ -53,15 +52,7 @@ async fn main() -> Result<(), std::io::Error> {
         let start = Instant::now();
         loop {
             tokio::time::sleep(Duration::from_secs(1)).await;
-            gauge!("demo_live_time", start.elapsed().as_secs_f64());
-        }
-    });
-
-    tokio::spawn(async move {
-        describe_gauge!("demo_live_time_max", Unit::Seconds, "Demo live time max");
-        loop {
-            tokio::time::sleep(Duration::from_secs(1)).await;
-            gauge!("demo_live_time_max", 100.0);
+            gauge!("demo_live_time").set(start.elapsed());
         }
     });
 
@@ -69,7 +60,7 @@ async fn main() -> Result<(), std::io::Error> {
         describe_counter!("demo_metric2", "Demo metric2");
         loop {
             tokio::time::sleep(Duration::from_secs(2)).await;
-            increment_counter!("demo_metric2");
+            counter!("demo_metric2").increment(1);
         }
     });
 
@@ -77,7 +68,7 @@ async fn main() -> Result<(), std::io::Error> {
         describe_counter!("demo_metric3", "Demo metric3");
         loop {
             tokio::time::sleep(Duration::from_secs(2)).await;
-            increment_counter!("demo_metric3");
+            counter!("demo_metric3").increment(1);
         }
     });
 
@@ -85,7 +76,7 @@ async fn main() -> Result<(), std::io::Error> {
         describe_counter!("demo_metric4", "Demo metric4");
         loop {
             tokio::time::sleep(Duration::from_secs(2)).await;
-            increment_counter!("demo_metric4");
+            counter!("demo_metric4").increment(1);
         }
     });
 
