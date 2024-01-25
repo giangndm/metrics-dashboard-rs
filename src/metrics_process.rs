@@ -2,13 +2,7 @@ use metrics::Unit;
 use metrics::{describe_gauge, gauge};
 use std::time::Duration;
 
-use sysinfo::CpuExt;
-use sysinfo::DiskExt;
-use sysinfo::NetworkExt;
-
-use sysinfo::ProcessExt;
-use sysinfo::SystemExt;
-use sysinfo::{get_current_pid, System};
+use sysinfo::{get_current_pid, Disks, Networks, System};
 
 use crate::round_up_f64_2digits;
 
@@ -64,17 +58,23 @@ pub fn register_sysinfo_event() {
 
     let pid = get_current_pid().expect("Should has");
     let mut sys = System::new_all();
+    let mut disks = Disks::new();
+    let mut networks = Networks::new();
 
+    disks.refresh_list();
+    networks.refresh_list();
     sys.refresh_all();
     sys.refresh_cpu();
 
-    gauge!(SYSTEM_CPU_CORE, sys.cpus().len() as f64);
+    gauge!(SYSTEM_CPU_CORE).set(sys.cpus().len() as f64);
 
     let mut network_up_pre = 0;
     let mut network_down_pre = 0;
 
     std::thread::spawn(move || {
         loop {
+            disks.refresh();
+            networks.refresh();
             sys.refresh_all();
             sys.refresh_cpu();
 
@@ -82,73 +82,55 @@ pub fn register_sysinfo_event() {
             for cpu in sys.cpus() {
                 sum += cpu.cpu_usage() as f64;
             }
-            gauge!(
-                SYSTEM_CPU_USAGE,
-                round_up_f64_2digits(sum / sys.cpus().len() as f64)
-            );
+            gauge!(SYSTEM_CPU_USAGE).set(round_up_f64_2digits(sum / sys.cpus().len() as f64));
 
-            gauge!(SYSTEM_MEMORY_TOTAL, sys.total_memory() as f64);
-            gauge!(
-                SYSTEM_MEMORY_USAGE,
-                round_up_f64_2digits(100.0 * sys.used_memory() as f64 / sys.total_memory() as f64)
-            );
-            gauge!(SYSTEM_SWAP_TOTAL, sys.total_swap() as f64);
-            gauge!(
-                SYSTEM_SWAP_USAGE,
-                round_up_f64_2digits(100.0 * sys.used_swap() as f64 / sys.total_swap() as f64)
-            );
+            gauge!(SYSTEM_MEMORY_TOTAL).set(sys.total_memory() as f64);
+            gauge!(SYSTEM_MEMORY_USAGE).set(round_up_f64_2digits(
+                100.0 * sys.used_memory() as f64 / sys.total_memory() as f64,
+            ));
+            gauge!(SYSTEM_SWAP_TOTAL).set(sys.total_swap() as f64);
+            gauge!(SYSTEM_SWAP_USAGE).set(round_up_f64_2digits(
+                100.0 * sys.used_swap() as f64 / sys.total_swap() as f64,
+            ));
 
             let mut disk_used = 0.0;
             let mut disk_sum = 0.0;
-            for disk in sys.disks() {
+            for disk in disks.iter() {
                 disk_sum += disk.total_space() as f64;
                 disk_used += (disk.total_space() - disk.available_space()) as f64;
             }
 
-            gauge!(
-                SYSTEM_DISK_USAGE,
-                round_up_f64_2digits(100.0 * disk_used / disk_sum)
-            );
+            gauge!(SYSTEM_DISK_USAGE).set(round_up_f64_2digits(100.0 * disk_used / disk_sum));
 
             let mut up_sum = 0;
             let mut down_sum = 0;
-            for (_interface_name, data) in sys.networks() {
+            for (_interface_name, data) in networks.iter() {
                 up_sum += data.total_transmitted();
                 down_sum += data.total_received();
             }
 
             if up_sum >= network_up_pre {
-                gauge!(
-                    SYSTEM_NETWORK_UP_SPEED,
-                    round_up_f64_2digits(
-                        8.0 * (up_sum - network_up_pre) as f64 / REFRESH_INTERVAL_SECONDS as f64
-                    )
-                );
+                gauge!(SYSTEM_NETWORK_UP_SPEED).set(round_up_f64_2digits(
+                    8.0 * (up_sum - network_up_pre) as f64 / REFRESH_INTERVAL_SECONDS as f64,
+                ));
             }
 
             if down_sum >= network_down_pre {
-                gauge!(
-                    SYSTEM_NETWORK_DOWN_SPEED,
-                    round_up_f64_2digits(
-                        8.0 * (down_sum - network_down_pre) as f64
-                            / REFRESH_INTERVAL_SECONDS as f64
-                    )
-                );
+                gauge!(SYSTEM_NETWORK_DOWN_SPEED).set(round_up_f64_2digits(
+                    8.0 * (down_sum - network_down_pre) as f64 / REFRESH_INTERVAL_SECONDS as f64,
+                ));
             }
 
-            gauge!(SYSTEM_NETWORK_UP_COUNT, up_sum as f64);
-            gauge!(SYSTEM_NETWORK_DOWN_COUNT, up_sum as f64);
+            gauge!(SYSTEM_NETWORK_UP_COUNT).set(up_sum as f64);
+            gauge!(SYSTEM_NETWORK_DOWN_COUNT).set(up_sum as f64);
 
             network_down_pre = down_sum;
             network_up_pre = up_sum;
 
             // Process info
             if let Some(process) = sys.process(pid) {
-                gauge!(
-                    PROCESS_CPU_USAGE,
-                    round_up_f64_2digits(process.cpu_usage() as f64)
-                );
-                gauge!(PROCESS_MEMORY_USAGE, process.memory() as f64);
+                gauge!(PROCESS_CPU_USAGE).set(round_up_f64_2digits(process.cpu_usage() as f64));
+                gauge!(PROCESS_MEMORY_USAGE).set(process.memory() as f64);
             }
 
             // Sleeping to let time for the system to run for long

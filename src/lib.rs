@@ -30,6 +30,7 @@
 //! describe_counter!("demo_metric1", "Demo metric1");
 //! counter!("demo_metric1").increment(1);
 //! ```
+use std::collections::HashMap;
 use std::vec;
 
 #[cfg(feature = "system")]
@@ -94,6 +95,15 @@ pub enum ChartType {
     },
 }
 
+impl ChartType {
+    pub fn metrics(&self) -> &[String] {
+        match self {
+            ChartType::Line { metrics, .. } => &metrics,
+            ChartType::Bar { metrics, .. } => &metrics,
+        }
+    }
+}
+
 #[handler]
 fn prometheus_metrics(Data(recorder): Data<&metrics_prometheus::Recorder<NoOp>>) -> String {
     prometheus::TextEncoder::new()
@@ -104,13 +114,20 @@ fn prometheus_metrics(Data(recorder): Data<&metrics_prometheus::Recorder<NoOp>>)
 #[handler]
 fn api_charts(Data(recorder): Data<&DashboardRecorder>) -> Json<Vec<ChartType>> {
     let option = &recorder.options;
-    let mut res = vec![];
+    let mut res: Vec<ChartType> = vec![];
+    let mut included_metrics = HashMap::new();
     for chart in option.custom_charts.iter() {
         res.push(chart.clone());
+        for metric in chart.metrics() {
+            included_metrics.insert(metric.clone(), true);
+        }
     }
     if option.include_default {
         let metrics = recorder.metrics();
         for meta in metrics.iter() {
+            if included_metrics.contains_key(&meta.key) {
+                continue;
+            }
             let chart = ChartType::Line {
                 metrics: vec![meta.key.clone()],
                 desc: meta.desc.clone().unwrap_or_else(|| meta.key.clone()),

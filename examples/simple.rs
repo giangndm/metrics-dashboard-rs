@@ -32,7 +32,7 @@ async fn main() -> Result<(), std::io::Error> {
             ChartType::Line {
                 metrics: vec![
                     "http_requests_total".to_string(),
-                    "http_requests_errors".to_string(),
+                    "http_requests_error".to_string(),
                 ],
                 desc: "Http requests".to_string(),
                 unit: Unit::Count.as_canonical_label().to_string(),
@@ -68,7 +68,7 @@ async fn main() -> Result<(), std::io::Error> {
         describe_counter!("demo_metric3", "Demo metric3");
         loop {
             tokio::time::sleep(Duration::from_secs(2)).await;
-            counter!("demo_metric3").increment(1);
+            counter!("demo_metric3").increment(2);
         }
     });
 
@@ -76,7 +76,7 @@ async fn main() -> Result<(), std::io::Error> {
         describe_counter!("demo_metric4", "Demo metric4");
         loop {
             tokio::time::sleep(Duration::from_secs(2)).await;
-            counter!("demo_metric4").increment(1);
+            counter!("demo_metric4").increment(3);
         }
     });
 
