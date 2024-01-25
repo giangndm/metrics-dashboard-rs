@@ -2,10 +2,23 @@
 //! To intergrate to poem webserver, simple include to route like:
 //!
 //! ```rust
-//! use metrics_dashboard::build_dashboard_route;
+//! use metrics_dashboard::{build_dashboard_route, DashboardOptions, ChartType};
 //! use poem::Route;
+//! 
+//! let dashboard_options = DashboardOptions {
+//!     charts: vec![
+//!         ChartType::Line {
+//!             metrics: vec![
+//!                 "demo_live_time".to_string(),
+//!                 "demo_live_time_max".to_string(),
+//!             ],
+//!             desc: Some("Demo metric line".to_string()),
+//!         },
+//!     ],
+//!     include_default: true,
+//! };
 //!
-//! let app = Route::new().nest("/dashboard/", build_dashboard_route());
+//! let app = Route::new().nest("/dashboard/", build_dashboard_route(dashboard_options));
 //! ```
 //!
 //! After init dashboard route, all of metrics defined metric will be exposed.

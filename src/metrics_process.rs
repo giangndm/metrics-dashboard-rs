@@ -60,11 +60,7 @@ pub fn register_sysinfo_event() {
     );
 
     describe_gauge!(PROCESS_CPU_USAGE, Unit::Percent, "Process cpu usage");
-    describe_gauge!(
-        PROCESS_MEMORY_USAGE,
-        Unit::Bytes,
-        "Process memory usage"
-    );
+    describe_gauge!(PROCESS_MEMORY_USAGE, Unit::Bytes, "Process memory usage");
 
     let pid = get_current_pid().expect("Should has");
     let mut sys = System::new_all();
