@@ -16,7 +16,7 @@ metrics-prometheus = "0.6"
 poem = { version = "2.0", features = ["embed", "static-files"] }
 rust-embed = { version = "8.2", optional = true }
 serde = "1"
-prometheus = "0.13.3"
+prometheus = "0.13"
 sysinfo = { version = "0.30", optional = true }
 
 [dev-dependencies]
