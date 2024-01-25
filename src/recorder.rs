@@ -1,4 +1,4 @@
-use metrics::{Key, Recorder};
+use metrics::{Key, Metadata, Recorder};
 use serde::Serialize;
 use std::{
     collections::HashMap,
@@ -25,7 +25,7 @@ pub struct MetricMeta {
     pub key: String,
     typ: MetricType,
     pub desc: Option<String>,
-    unit: Option<String>,
+    pub unit: Option<String>,
 }
 
 #[derive(Debug, Serialize, Clone)]
@@ -213,7 +213,7 @@ impl Recorder for DashboardRecorder {
         }
     }
 
-    fn register_counter(&self, key: &Key) -> metrics::Counter {
+    fn register_counter(&self, key: &Key, _metadata: &Metadata<'_>) -> metrics::Counter {
         let mut metrics = self.metrics.write().expect("Should ok");
         if !metrics.contains_key(key.name()) {
             metrics.insert(
@@ -236,7 +236,7 @@ impl Recorder for DashboardRecorder {
         )
     }
 
-    fn register_gauge(&self, key: &Key) -> metrics::Gauge {
+    fn register_gauge(&self, key: &Key, _metadata: &Metadata<'_>) -> metrics::Gauge {
         let mut metrics = self.metrics.write().expect("Should ok");
         if !metrics.contains_key(key.name()) {
             metrics.insert(
@@ -259,7 +259,7 @@ impl Recorder for DashboardRecorder {
         )
     }
 
-    fn register_histogram(&self, key: &Key) -> metrics::Histogram {
+    fn register_histogram(&self, key: &Key, _metadata: &Metadata<'_>) -> metrics::Histogram {
         let mut metrics = self.metrics.write().expect("Should ok");
         if !metrics.contains_key(key.name()) {
             metrics.insert(

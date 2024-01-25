@@ -10,7 +10,7 @@ const BusChannel = {};
 const CachedChannel = {};
 const Metrics = {};
 
-const LineChart = ({ idx, metrics, desc, meta, unit }) => {
+const LineChart = ({ idx, metrics, desc, unit }) => {
   const elm = useRef(null);
   const [value, setValue] = useState();
   useEffect(() => {
@@ -80,7 +80,7 @@ const LineChart = ({ idx, metrics, desc, meta, unit }) => {
   </div>`;
 };
 
-const BarChart = ({ idx, metrics, desc, meta, unit }) => {
+const BarChart = ({ idx, metrics, desc, unit }) => {
   const elm = useRef(null);
   const [value, setValue] = useState();
   useEffect(() => {
@@ -145,24 +145,22 @@ const BarChart = ({ idx, metrics, desc, meta, unit }) => {
   </div>`;
 };
 
-function renderChart({ idx, chartType, metrics, desc, meta, unit }) {
+function renderChart({ idx, chartType, meta }) {
   switch (chartType) {
     case "Bar":
       return html`<${BarChart}
         idx=${idx}
-        metrics=${metrics}
-        desc=${desc}
-        meta=${meta}
-        unit=${unit}
+        metrics=${meta.metrics}
+        desc=${meta.desc}
+        unit=${meta.unit}
       />`;
     case "Line":
     default:
       return html`<${LineChart}
         idx=${idx}
-        metrics=${metrics}
-        desc=${desc}
-        meta=${meta}
-        unit=${unit}
+        metrics=${meta.metrics}
+        desc=${meta.desc}
+        unit=${meta.unit}
       />`;
   }
 }
@@ -179,7 +177,7 @@ function App() {
     });
     setCharts(charts);
 
-    const rawKeys = charts.map((m) => m.keys).flat();
+    const rawKeys = charts.map((m) => m.meta.metrics).flat();
     const keys = [...new Set(rawKeys)];
     const load = async () => {
       let now = new Date();
@@ -209,11 +207,8 @@ function App() {
             ${charts.map((c, idx) =>
               renderChart({
                 idx,
-                metrics: c.keys,
-                desc: c.desc,
-                meta: c.chart_type.meta,
-                unit: Metrics[c.keys[0]].unit,
-                chartType: c.chart_type.type,
+                chartType: c.type,
+                meta: c.meta,
               })
             )}
           </div>
