@@ -98,8 +98,8 @@ pub enum ChartType {
 impl ChartType {
     pub fn metrics(&self) -> &[String] {
         match self {
-            ChartType::Line { metrics, .. } => &metrics,
-            ChartType::Bar { metrics, .. } => &metrics,
+            ChartType::Line { metrics, .. } => metrics,
+            ChartType::Bar { metrics, .. } => metrics,
         }
     }
 }
