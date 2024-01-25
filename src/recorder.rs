@@ -5,6 +5,8 @@ use std::{
     sync::{Arc, RwLock},
 };
 
+use crate::DashboardOptions;
+
 use self::{counter::SimpleCounter, gauge::SimpleGauge, histogram::SimpleHistogram};
 
 mod counter;
@@ -20,9 +22,10 @@ pub enum MetricType {
 
 #[derive(Debug, Serialize, Clone)]
 pub struct MetricMeta {
-    key: String,
+    pub key: String,
     typ: MetricType,
-    desc: Option<String>,
+    pub desc: Option<String>,
+    unit: Option<String>,
 }
 
 #[derive(Debug, Serialize, Clone)]
@@ -47,7 +50,7 @@ impl DashboardStorage {
         entry.clone()
     }
 
-    fn get_gause(&mut self, key: &str) -> SimpleGauge {
+    fn get_gauge(&mut self, key: &str) -> SimpleGauge {
         let entry = self.gauges.entry(key.to_string()).or_default();
         entry.clone()
     }
@@ -60,18 +63,32 @@ impl DashboardStorage {
 
 #[derive(Clone)]
 pub struct DashboardRecorder {
+    pub options: DashboardOptions,
     storage: Arc<RwLock<DashboardStorage>>,
     metrics: Arc<RwLock<HashMap<String, MetricMeta>>>,
 }
 
+/// The `DashboardRecorder` struct represents a recorder for metrics dashboard.
+/// It provides methods for adding bound keys, retrieving metrics, and retrieving metric values.
 impl DashboardRecorder {
-    pub fn new() -> Self {
+    /// Creates a new instance of `DashboardRecorder`.
+    ///
+    /// # Returns
+    ///
+    /// A new instance of `DashboardRecorder`.
+    pub fn new(opts: DashboardOptions) -> Self {
         Self {
+            options: opts,
             storage: Default::default(),
             metrics: Arc::new(RwLock::new(HashMap::new())),
         }
     }
 
+    /// Retrieves the metrics as a vector of `MetricMeta`.
+    ///
+    /// # Returns
+    ///
+    /// A vector of `MetricMeta`.
     pub fn metrics(&self) -> Vec<MetricMeta> {
         let mut res = vec![];
         let metrics = &*self.metrics.read().expect("Should lock");
@@ -82,6 +99,15 @@ impl DashboardRecorder {
         res
     }
 
+    /// Retrieves the metric values for the specified keys.
+    ///
+    /// # Arguments
+    ///
+    /// * `keys` - The keys to retrieve metric values for.
+    ///
+    /// # Returns
+    ///
+    /// A vector of `MetricValue`.
     pub fn metrics_value(&self, keys: Vec<&str>) -> Vec<MetricValue> {
         let mut storage = self.storage.write().expect("Should lock");
         let metrics = self.metrics.read().expect("Should lock");
@@ -98,7 +124,7 @@ impl DashboardRecorder {
                         });
                     }
                     MetricType::Gauge => {
-                        let gauge = storage.get_gause(key);
+                        let gauge = storage.get_gauge(key);
                         data.push(MetricValue {
                             key: key.to_string(),
                             value_u64: None,
@@ -124,7 +150,7 @@ impl Recorder for DashboardRecorder {
     fn describe_counter(
         &self,
         key: metrics::KeyName,
-        _unit: Option<metrics::Unit>,
+        unit: Option<metrics::Unit>,
         description: metrics::SharedString,
     ) {
         let mut metrics = self.metrics.write().expect("Should ok");
@@ -137,6 +163,7 @@ impl Recorder for DashboardRecorder {
                     key: key.as_str().to_string(),
                     typ: MetricType::Counter,
                     desc: Some(description.to_string()),
+                    unit: unit.map(|u| u.as_canonical_label().to_string()),
                 },
             );
         }
@@ -145,7 +172,7 @@ impl Recorder for DashboardRecorder {
     fn describe_gauge(
         &self,
         key: metrics::KeyName,
-        _unit: Option<metrics::Unit>,
+        unit: Option<metrics::Unit>,
         description: metrics::SharedString,
     ) {
         let mut metrics = self.metrics.write().expect("Should ok");
@@ -158,6 +185,7 @@ impl Recorder for DashboardRecorder {
                     key: key.as_str().to_string(),
                     typ: MetricType::Gauge,
                     desc: Some(description.to_string()),
+                    unit: unit.map(|u| u.as_canonical_label().to_string()),
                 },
             );
         }
@@ -166,7 +194,7 @@ impl Recorder for DashboardRecorder {
     fn describe_histogram(
         &self,
         key: metrics::KeyName,
-        _unit: Option<metrics::Unit>,
+        unit: Option<metrics::Unit>,
         description: metrics::SharedString,
     ) {
         let mut metrics = self.metrics.write().expect("Should ok");
@@ -179,6 +207,7 @@ impl Recorder for DashboardRecorder {
                     key: key.as_str().to_string(),
                     typ: MetricType::Histogram,
                     desc: Some(description.to_string()),
+                    unit: unit.map(|u| u.as_canonical_label().to_string()),
                 },
             );
         }
@@ -193,6 +222,7 @@ impl Recorder for DashboardRecorder {
                     key: key.name().to_string(),
                     typ: MetricType::Counter,
                     desc: None,
+                    unit: None,
                 },
             );
         }
@@ -215,6 +245,7 @@ impl Recorder for DashboardRecorder {
                     key: key.name().to_string(),
                     typ: MetricType::Gauge,
                     desc: None,
+                    unit: None,
                 },
             );
         }
@@ -223,7 +254,7 @@ impl Recorder for DashboardRecorder {
             self.storage
                 .write()
                 .expect("Should lock")
-                .get_gause(key.name())
+                .get_gauge(key.name())
                 .into(),
         )
     }
@@ -237,6 +268,7 @@ impl Recorder for DashboardRecorder {
                     key: key.name().to_string(),
                     typ: MetricType::Histogram,
                     desc: None,
+                    unit: None,
                 },
             );
         }
