@@ -114,7 +114,6 @@ impl DashboardRecorder {
         let mut data = vec![];
         for key in keys {
             if let Some(meta) = metrics.get(key) {
-                println!("key: {:?}, meta: {:?}", key, meta);
                 match meta.typ {
                     MetricType::Counter => {
                         let counter = storage.get_counter(key);
