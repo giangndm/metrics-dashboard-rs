@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0](https://github.com/giangndm/metrics-dashboard-rs/compare/v0.1.3...v0.2.0) - 2024-01-25
+
+### Added
+- multi keys chart configuration ([#22](https://github.com/giangndm/metrics-dashboard-rs/pull/22))
+
+### Other
+- update prometheus deps ([#25](https://github.com/giangndm/metrics-dashboard-rs/pull/25))
+- refactor apis and update deps ([#24](https://github.com/giangndm/metrics-dashboard-rs/pull/24))
+
 ## [0.1.3](https://github.com/giangndm/metrics-dashboard-rs/compare/v0.1.2...v0.1.3) - 2023-12-12
 
 ### Added
