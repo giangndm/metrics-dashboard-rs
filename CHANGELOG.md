@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.1](https://github.com/giangndm/metrics-dashboard-rs/compare/v0.2.0...v0.2.1) - 2024-05-29
+
+### Fixed
+- export system and process info for prometheus ([#28](https://github.com/giangndm/metrics-dashboard-rs/pull/28))
+
 ## [0.2.0](https://github.com/giangndm/metrics-dashboard-rs/compare/v0.1.3...v0.2.0) - 2024-01-25
 
 ### Added
