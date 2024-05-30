@@ -30,11 +30,11 @@ pub struct MetricMeta {
 
 #[derive(Debug, Serialize, Clone)]
 pub struct MetricValue {
-    key: String,
+    pub key: String,
     #[serde(rename = "value", skip_serializing_if = "Option::is_none")]
-    value_u64: Option<u64>,
+    pub value_u64: Option<u64>,
     #[serde(rename = "value", skip_serializing_if = "Option::is_none")]
-    value_f64: Option<f64>,
+    pub value_f64: Option<f64>,
 }
 
 #[derive(Default)]
