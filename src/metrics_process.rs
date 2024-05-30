@@ -8,22 +8,22 @@ use crate::round_up_f64_2digits;
 
 const REFRESH_INTERVAL_SECONDS: u64 = 2;
 
-const SYSTEM_CPU_CORE: &str = "system_cpu_core";
-const SYSTEM_CPU_USAGE: &str = "system_cpu_usage";
-const SYSTEM_MEMORY_USAGE: &str = "system_memory_usage";
-const SYSTEM_MEMORY_TOTAL: &str = "system_memory_total";
-const SYSTEM_SWAP_USAGE: &str = "system_swap_usage";
-const SYSTEM_SWAP_TOTAL: &str = "system_swap_total";
-const SYSTEM_DISK_USAGE: &str = "system_disk_usage";
-const SYSTEM_NETWORK_UP_COUNT: &str = "system_network_up_count";
-const SYSTEM_NETWORK_UP_SPEED: &str = "system_network_up_speed";
-const SYSTEM_NETWORK_DOWN_COUNT: &str = "system_network_down_count";
-const SYSTEM_NETWORK_DOWN_SPEED: &str = "system_network_down_speed";
+pub const SYSTEM_CPU_CORE: &str = "system_cpu_core";
+pub const SYSTEM_CPU_USAGE: &str = "system_cpu_usage";
+pub const SYSTEM_MEMORY_USAGE: &str = "system_memory_usage";
+pub const SYSTEM_MEMORY_TOTAL: &str = "system_memory_total";
+pub const SYSTEM_SWAP_USAGE: &str = "system_swap_usage";
+pub const SYSTEM_SWAP_TOTAL: &str = "system_swap_total";
+pub const SYSTEM_DISK_USAGE: &str = "system_disk_usage";
+pub const SYSTEM_NETWORK_UP_COUNT: &str = "system_network_up_count";
+pub const SYSTEM_NETWORK_UP_SPEED: &str = "system_network_up_speed";
+pub const SYSTEM_NETWORK_DOWN_COUNT: &str = "system_network_down_count";
+pub const SYSTEM_NETWORK_DOWN_SPEED: &str = "system_network_down_speed";
 
-const PROCESS_CPU_USAGE: &str = "process_cpu_utilization";
-const PROCESS_MEMORY_USAGE: &str = "process_memory_usage";
+pub const PROCESS_CPU_USAGE: &str = "process_cpu_utilization";
+pub const PROCESS_MEMORY_USAGE: &str = "process_memory_usage";
 
-pub fn register_sysinfo_event() {
+pub(crate) fn register_sysinfo_event() {
     describe_gauge!(SYSTEM_CPU_CORE, "System CPU cores number");
     describe_gauge!(SYSTEM_CPU_USAGE, Unit::Percent, "System CPU usage");
     describe_gauge!(
