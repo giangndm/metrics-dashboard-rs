@@ -41,11 +41,9 @@ async fn main() -> Result<(), std::io::Error> {
         include_default: true,
     };
 
-    let (_, dashboard_route) = build_dashboard_route(dashboard_options);
-
     let app = Route::new()
         .at("/hello/:name", get(hello))
-        .nest("/dashboard/", dashboard_route)
+        .nest("/dashboard/", build_dashboard_route(dashboard_options))
         .with(HttpMetricMiddleware)
         .with(Tracing);
 
