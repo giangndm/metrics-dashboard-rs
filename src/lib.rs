@@ -33,6 +33,8 @@
 use std::collections::HashMap;
 use std::vec;
 
+pub use metrics;
+
 #[cfg(feature = "system")]
 use metrics_process::register_sysinfo_event;
 use metrics_prometheus::failure::strategy::{self, NoOp};
