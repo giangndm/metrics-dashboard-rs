@@ -11,7 +11,7 @@ license = "MIT"
 [dependencies]
 async-trait = "0.1"
 metrics = "0.22"
-metrics-util = "0.16"
+metrics-util = "0.17"
 metrics-prometheus = "0.6"
 poem = { version = "2.0", features = ["embed", "static-files"] }
 rust-embed = { version = "8.2", optional = true }
