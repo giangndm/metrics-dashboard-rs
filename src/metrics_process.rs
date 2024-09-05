@@ -23,7 +23,7 @@ pub const SYSTEM_NETWORK_DOWN_SPEED: &str = "system_network_down_speed";
 pub const PROCESS_CPU_USAGE: &str = "process_cpu_utilization";
 pub const PROCESS_MEMORY_USAGE: &str = "process_memory_usage";
 
-pub(crate) fn register_sysinfo_event() {
+pub fn register_sysinfo_event() {
     describe_gauge!(SYSTEM_CPU_CORE, "System CPU cores number");
     describe_gauge!(SYSTEM_CPU_USAGE, Unit::Percent, "System CPU usage");
     describe_gauge!(
