@@ -33,6 +33,8 @@
 use std::collections::HashMap;
 use std::vec;
 
+pub use metrics;
+
 #[cfg(feature = "system")]
 use metrics_process::register_sysinfo_event;
 use metrics_prometheus::failure::strategy::{self, NoOp};
@@ -57,9 +59,9 @@ use recorder::{DashboardRecorder, MetricMeta, MetricValue};
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "system")]
-mod metrics_process;
+pub mod metrics_process;
 mod middleware;
-mod recorder;
+pub mod recorder;
 
 #[cfg(feature = "embed")]
 #[derive(RustEmbed)]
@@ -155,6 +157,10 @@ fn api_metrics_value(
 }
 
 pub fn build_dashboard_route(opts: DashboardOptions) -> Route {
+    build_dashboard_route_with_recorder(opts).1
+}
+
+pub fn build_dashboard_route_with_recorder(opts: DashboardOptions) -> (DashboardRecorder, Route) {
     let recorder1 = metrics_prometheus::Recorder::builder()
         .with_failure_strategy(strategy::NoOp)
         .build();
@@ -174,7 +180,10 @@ pub fn build_dashboard_route(opts: DashboardOptions) -> Route {
         .at("/prometheus", prometheus_metrics.data(recorder1))
         .at("/api/metrics", api_metrics.data(recorder2.clone()))
         .at("/api/charts", api_charts.data(recorder2.clone()))
-        .at("/api/metrics_value", api_metrics_value.data(recorder2));
+        .at(
+            "/api/metrics_value",
+            api_metrics_value.data(recorder2.clone()),
+        );
 
     #[cfg(not(feature = "embed"))]
     let route = route.nest(
@@ -187,7 +196,7 @@ pub fn build_dashboard_route(opts: DashboardOptions) -> Route {
     #[cfg(feature = "embed")]
     let route = route.nest("/", EmbeddedFilesEndpoint::<Files>::new());
 
-    route
+    (recorder2, route)
 }
 
 #[allow(unused)]
