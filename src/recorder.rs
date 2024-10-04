@@ -1,9 +1,7 @@
 use metrics::{Key, Metadata, Recorder};
+use parking_lot::RwLock;
 use serde::Serialize;
-use std::{
-    collections::HashMap,
-    sync::{Arc, RwLock},
-};
+use std::{collections::HashMap, sync::Arc};
 
 use crate::DashboardOptions;
 
@@ -91,7 +89,7 @@ impl DashboardRecorder {
     /// A vector of `MetricMeta`.
     pub fn metrics(&self) -> Vec<MetricMeta> {
         let mut res = vec![];
-        let metrics = &*self.metrics.read().expect("Should lock");
+        let metrics = &*self.metrics.read();
         for (_key, meta) in metrics.iter() {
             res.push(meta.clone());
         }
@@ -109,8 +107,8 @@ impl DashboardRecorder {
     ///
     /// A vector of `MetricValue`.
     pub fn metrics_value(&self, keys: Vec<&str>) -> Vec<MetricValue> {
-        let mut storage = self.storage.write().expect("Should lock");
-        let metrics = self.metrics.read().expect("Should lock");
+        let mut storage = self.storage.write();
+        let metrics = self.metrics.read();
         let mut data = vec![];
         for key in keys {
             if let Some(meta) = metrics.get(key) {
@@ -153,7 +151,7 @@ impl Recorder for DashboardRecorder {
         unit: Option<metrics::Unit>,
         description: metrics::SharedString,
     ) {
-        let mut metrics = self.metrics.write().expect("Should ok");
+        let mut metrics = self.metrics.write();
         if let Some(metric) = metrics.get_mut(key.as_str()) {
             metric.desc = Some(description.to_string());
         } else {
@@ -175,7 +173,7 @@ impl Recorder for DashboardRecorder {
         unit: Option<metrics::Unit>,
         description: metrics::SharedString,
     ) {
-        let mut metrics = self.metrics.write().expect("Should ok");
+        let mut metrics = self.metrics.write();
         if let Some(metric) = metrics.get_mut(key.as_str()) {
             metric.desc = Some(description.to_string())
         } else {
@@ -197,7 +195,7 @@ impl Recorder for DashboardRecorder {
         unit: Option<metrics::Unit>,
         description: metrics::SharedString,
     ) {
-        let mut metrics = self.metrics.write().expect("Should ok");
+        let mut metrics = self.metrics.write();
         if let Some(metric) = metrics.get_mut(key.as_str()) {
             metric.desc = Some(description.to_string())
         } else {
@@ -214,7 +212,7 @@ impl Recorder for DashboardRecorder {
     }
 
     fn register_counter(&self, key: &Key, _metadata: &Metadata<'_>) -> metrics::Counter {
-        let mut metrics = self.metrics.write().expect("Should ok");
+        let mut metrics = self.metrics.write();
         if !metrics.contains_key(key.name()) {
             metrics.insert(
                 key.name().to_string(),
@@ -227,17 +225,11 @@ impl Recorder for DashboardRecorder {
             );
         }
 
-        metrics::Counter::from_arc(
-            self.storage
-                .write()
-                .expect("Should lock")
-                .get_counter(key.name())
-                .into(),
-        )
+        metrics::Counter::from_arc(self.storage.write().get_counter(key.name()).into())
     }
 
     fn register_gauge(&self, key: &Key, _metadata: &Metadata<'_>) -> metrics::Gauge {
-        let mut metrics = self.metrics.write().expect("Should ok");
+        let mut metrics = self.metrics.write();
         if !metrics.contains_key(key.name()) {
             metrics.insert(
                 key.name().to_string(),
@@ -250,17 +242,11 @@ impl Recorder for DashboardRecorder {
             );
         }
 
-        metrics::Gauge::from_arc(
-            self.storage
-                .write()
-                .expect("Should lock")
-                .get_gauge(key.name())
-                .into(),
-        )
+        metrics::Gauge::from_arc(self.storage.write().get_gauge(key.name()).into())
     }
 
     fn register_histogram(&self, key: &Key, _metadata: &Metadata<'_>) -> metrics::Histogram {
-        let mut metrics = self.metrics.write().expect("Should ok");
+        let mut metrics = self.metrics.write();
         if !metrics.contains_key(key.name()) {
             metrics.insert(
                 key.name().to_string(),
@@ -273,12 +259,6 @@ impl Recorder for DashboardRecorder {
             );
         }
 
-        metrics::Histogram::from_arc(
-            self.storage
-                .write()
-                .expect("Should lock")
-                .get_histogram(key.name())
-                .into(),
-        )
+        metrics::Histogram::from_arc(self.storage.write().get_histogram(key.name()).into())
     }
 }
