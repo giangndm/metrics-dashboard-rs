@@ -346,12 +346,6 @@ mod tests {
     #[test]
     fn test_concurrent_access() {
         let recorder = Arc::new(DashboardRecorder::new(DashboardOptions::default()));
-        let counter = recorder.register_counter(
-            &Key::from_static_name("concurrent_counter"),
-            &default_meta(),
-        );
-        let gauge =
-            recorder.register_gauge(&Key::from_static_name("concurrent_gauge"), &default_meta());
 
         let num_threads = 10;
         let iterations = 1000;
@@ -359,13 +353,17 @@ mod tests {
 
         for _ in 0..num_threads {
             let recorder_clone = Arc::clone(&recorder);
-            let counter_clone = counter.clone();
-            let gauge_clone = gauge.clone();
 
             handles.push(thread::spawn(move || {
+                let gauge = recorder_clone
+                    .register_gauge(&Key::from_static_name("concurrent_gauge"), &default_meta());
+                let counter = recorder_clone.register_counter(
+                    &Key::from_static_name("concurrent_counter"),
+                    &default_meta(),
+                );
                 for i in 0..iterations {
-                    counter_clone.increment(1);
-                    gauge_clone.set(i as f64);
+                    counter.increment(1);
+                    gauge.set(i as f64);
 
                     // Also read values concurrently
                     let _values = recorder_clone
