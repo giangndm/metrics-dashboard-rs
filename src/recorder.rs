@@ -224,6 +224,7 @@ impl Recorder for DashboardRecorder {
                 },
             );
         }
+        drop(metrics);
 
         metrics::Counter::from_arc(self.storage.write().get_counter(key.name()).into())
     }
@@ -241,6 +242,7 @@ impl Recorder for DashboardRecorder {
                 },
             );
         }
+        drop(metrics);
 
         metrics::Gauge::from_arc(self.storage.write().get_gauge(key.name()).into())
     }
@@ -258,6 +260,7 @@ impl Recorder for DashboardRecorder {
                 },
             );
         }
+        drop(metrics);
 
         metrics::Histogram::from_arc(self.storage.write().get_histogram(key.name()).into())
     }
