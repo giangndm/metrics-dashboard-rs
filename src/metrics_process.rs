@@ -64,7 +64,7 @@ pub fn register_sysinfo_event() {
     disks.refresh_list();
     networks.refresh_list();
     sys.refresh_all();
-    sys.refresh_cpu();
+    sys.refresh_cpu_all();
 
     gauge!(SYSTEM_CPU_CORE).set(sys.cpus().len() as f64);
 
@@ -76,7 +76,7 @@ pub fn register_sysinfo_event() {
             disks.refresh();
             networks.refresh();
             sys.refresh_all();
-            sys.refresh_cpu();
+            sys.refresh_cpu_all();
 
             let mut sum = 0.0;
             for cpu in sys.cpus() {
