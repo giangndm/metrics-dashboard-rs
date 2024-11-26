@@ -19,7 +19,6 @@ pub struct HttpMetricMiddlewareEndpoint<E> {
     inner: E,
 }
 
-#[async_trait::async_trait]
 impl<E: Endpoint> Endpoint for HttpMetricMiddlewareEndpoint<E> {
     type Output = Response;
 
